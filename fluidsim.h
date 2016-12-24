@@ -16,6 +16,9 @@
 /* Output specified error message (suffixing newline) to stderr and exit. */
 #define fatal(...) do { err(__VA_ARGS__); exit(EXIT_FAILURE); } while (0)
 
+/* Determine size of static array. */
+#define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
+
 #ifdef __linux__
 #include <xcb/xcb.h>
 struct window {
