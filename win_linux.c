@@ -22,10 +22,9 @@ static xcb_atom_t get_xcb_atom(xcb_connection_t *conn, const char *name)
 /* Poll and handle events for the specified window. */
 enum fluidsim_event win_handle_events(struct window *win)
 {
-	xcb_generic_event_t *event;
+	xcb_generic_event_t *event = xcb_poll_for_event(win->conn);
 	enum fluidsim_event ret = FLUIDSIM_EVENT_NONE;
 
-	event = xcb_poll_for_event(win->conn);
 	if (event == NULL)
 		return ret;
 
