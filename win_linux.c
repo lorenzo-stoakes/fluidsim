@@ -99,7 +99,6 @@ struct window *win_make(char *title, uint16_t width, uint16_t height)
 
 	/* Show our window. */
 	xcb_map_window(conn, win);
-	xcb_flush(conn);
 
 	/* Store data about the window to return to the caller. */
 	ret = must_malloc(sizeof(struct window));
@@ -107,7 +106,15 @@ struct window *win_make(char *title, uint16_t width, uint16_t height)
 	ret->win = win;
 	ret->event_delete_win = atom_delete_win;
 
+	win_update(ret);
+
 	return ret;
+}
+
+/* Force update of window contents. */
+void win_update(struct window *win)
+{
+	xcb_flush(win->conn);
 }
 
 /* Destroy specified window, freeing memory as required. */

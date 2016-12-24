@@ -47,5 +47,6 @@ static inline void *must_malloc(size_t size)
 void win_destroy(struct window *win);
 enum fluidsim_event win_handle_events(struct window *win);
 struct window *win_make(char *title, uint16_t width, uint16_t height);
+void win_update(struct window *win);
 
 #endif /* __fluidsim_h */
