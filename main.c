@@ -4,6 +4,7 @@ int main(void)
 {
 	bool quit = false;
 	struct window *win = win_make("fluidsim", 640, 480);
+	struct vulkan *vulkan = vulkan_make(win);
 
 	while (!quit) {
 		switch (win_handle_events(win)) {
@@ -16,6 +17,7 @@ int main(void)
 		}
 	}
 
+	vulkan_destroy(vulkan);
 	win_destroy(win);
 
 	return EXIT_SUCCESS;
