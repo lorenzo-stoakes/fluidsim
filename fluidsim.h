@@ -46,7 +46,8 @@ struct dyn_arr {
 /* malloc, or if no memory is available raise a fatal error and exit. */
 static inline void *must_malloc(size_t size)
 {
-	void *ret = malloc(size);
+	/* Prefer a calloc size zeroing doesn't take that long and is safer. */
+	void *ret = calloc(size, 1);
 
 	if (ret == NULL)
 		fatal("Out of memory");
