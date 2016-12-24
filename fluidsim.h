@@ -35,6 +35,14 @@ enum fluidsim_event {
 	FLUIDSIM_EVENT_QUIT
 };
 
+typedef uint64_t dyn_arr_t;
+
+struct dyn_arr {
+	dyn_arr_t *vec;
+
+	size_t count, cap;
+};
+
 /* malloc, or if no memory is available raise a fatal error and exit. */
 static inline void *must_malloc(size_t size)
 {
@@ -45,6 +53,11 @@ static inline void *must_malloc(size_t size)
 
 	return ret;
 }
+
+/* helpers.c */
+struct dyn_arr *dyn_make(void);
+void dyn_push(struct dyn_arr *arr, dyn_arr_t val);
+void dyn_destroy(struct dyn_arr *arr);
 
 /* win_<target>.c */
 void win_destroy(struct window *win);
