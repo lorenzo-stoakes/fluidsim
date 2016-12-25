@@ -125,6 +125,7 @@ static VkDeviceQueueCreateInfo *populate_device_queue_info(
 /* Populate device details contained within vulkan struct. */
 static void populate_device(struct vulkan *vulkan)
 {
+	uint32_t gpu_count = 0;
 	uint32_t count;
 	struct vulkan_device *device = &vulkan->device;
 	VkDeviceCreateInfo create_info = {
@@ -132,6 +133,17 @@ static void populate_device(struct vulkan *vulkan)
 		/* TODO: Default to not enabling any features, later enable? */
 		.pEnabledFeatures = NULL
 	};
+
+	check_err("vkEnumeratePhysicalDevices (count)",
+		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count, NULL));
+	if (gpu_count < 1)
+		fatal("Need at least 1 compatible GPU.");
+
+	/* We only retrieve the 1st physical device. */
+	gpu_count = 1;
+	check_err("vkEnumeratePhysicalDevices (enumerate)",
+		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count,
+					&vulkan->physical_device));
 
 	vkGetPhysicalDeviceProperties(vulkan->physical_device,
 				&device->properties);
@@ -170,7 +182,6 @@ static void populate_device(struct vulkan *vulkan)
 /* Set up vulkan using the specified window. */
 struct vulkan *vulkan_make(struct window *win)
 {
-	uint32_t gpu_count = 0;
 	struct vulkan *ret = must_malloc(sizeof(struct vulkan));
 	char *name = strdup("fluidsim");
 	VkApplicationInfo app_info = {
@@ -194,16 +205,6 @@ struct vulkan *vulkan_make(struct window *win)
 
 	check_err("vkCreateInstance",
 		vkCreateInstance(&instance_create_info, NULL, &ret->instance));
-	check_err("vkEnumeratePhysicalDevices (count)",
-		vkEnumeratePhysicalDevices(ret->instance, &gpu_count, NULL));
-	if (gpu_count < 1)
-		fatal("Need at least 1 compatible GPU.");
-
-	/* We only retrieve the 1st physical device. */
-	gpu_count = 1;
-	check_err("vkEnumeratePhysicalDevices (enumerate)",
-		vkEnumeratePhysicalDevices(ret->instance, &gpu_count,
-					&ret->physical_device));
 
 	populate_device(ret);
 
