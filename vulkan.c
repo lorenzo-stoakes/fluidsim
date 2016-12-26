@@ -145,8 +145,13 @@ static void get_depth_format(struct vulkan_device *device)
 						device->format, &properties);
 
 		if (properties.optimalTilingFeatures &
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+			device->supports_blit =
+				properties.optimalTilingFeatures &
+				VK_FORMAT_FEATURE_BLIT_DST_BIT;
+
 			return;
+		}
 	}
 
 	fatal("Unable to find acceptable depth format :(");
@@ -328,6 +333,128 @@ static void get_colour_format(struct vulkan_device *device)
 	device->colour_space = surface_format.colorSpace;
 }
 
+static void destroy_swapchain(struct vulkan_device *device)
+{
+	uint32_t i;
+
+	if (device->swap_chain == VK_NULL_HANDLE)
+		return;
+
+	for (i = 0; i < device->image_count; i++)
+		vkDestroyImageView(device->logical, device->views[i], NULL);
+
+	free(device->images);
+	free(device->views);
+
+	vkDestroySwapchainKHR(device->logical, device->swap_chain, NULL);
+}
+
+static void create_swapchain_images(struct vulkan_device *device)
+{
+	uint32_t i;
+
+	check_err("vkGetSwapchainImagesKHR (count)",
+		vkGetSwapchainImagesKHR(device->logical, device->swap_chain,
+					&device->image_count, NULL));
+	if (device->image_count == 0)
+		fatal("Unable to allocate images.");
+
+	device->images = must_malloc(sizeof(VkImage) * device->image_count);
+	device->views = must_malloc(sizeof(VkImageView) * device->image_count);
+
+	check_err("vkGetSwapchainImagesKHR (enumerate)",
+		vkGetSwapchainImagesKHR(device->logical, device->swap_chain,
+					&device->image_count, device->images));
+
+	for (i = 0; i < device->image_count; i++) {
+		VkImageViewCreateInfo info = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = device->images[i],
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = device->colour_format,
+			.components = {
+				VK_COMPONENT_SWIZZLE_R,
+				VK_COMPONENT_SWIZZLE_G,
+				VK_COMPONENT_SWIZZLE_B,
+				VK_COMPONENT_SWIZZLE_A
+			},
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			}
+		};
+
+		check_err("vkCreateImageView",
+			vkCreateImageView(device->logical, &info, NULL,
+					&device->views[i]));
+	}
+}
+
+/* Create a new swapchain, destroying the existing one if present. */
+static void create_swapchain(struct vulkan *vulkan)
+{
+	VkSwapchainKHR new_swap_chain;
+	VkSurfaceCapabilitiesKHR caps;
+	uint16_t width, height;
+	struct vulkan_device *device = &vulkan->device;
+	struct window *win = vulkan->win;
+	VkSwapchainCreateInfoKHR create_info = {
+		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+		.surface = device->surface,
+		.imageFormat = device->colour_format,
+		.imageColorSpace = device->colour_space,
+		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		.imageArrayLayers = 1,
+		.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.clipped = VK_TRUE,
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		.presentMode = VK_PRESENT_MODE_FIFO_KHR, /* vsync */
+		.oldSwapchain = device->swap_chain
+	};
+
+	check_err("vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->physical,
+							device->surface, &caps));
+
+	/* Fixup width/height as needed. */
+	if (caps.currentExtent.width == (uint32_t)-1) {
+		width = win->width;
+		height = win->height;
+	} else {
+		width = caps.currentExtent.width;
+		height = caps.currentExtent.height;
+
+		win->width = width;
+		win->height = height;
+	}
+	create_info.imageExtent.width = width;
+	create_info.imageExtent.height = height;
+
+	create_info.minImageCount = MIN(caps.minImageCount + 1,
+					caps.maxImageCount);
+
+	/* Prefer non-rotated transform. */
+	if (caps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+		create_info.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+	else
+		create_info.preTransform = caps.currentTransform;
+
+	if (device->supports_blit)
+		create_info.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+	check_err("vkCreateSwapchainKHR",
+		vkCreateSwapchainKHR(device->logical, &create_info, NULL,
+				&new_swap_chain));
+	/* Clean up memory from existing swap chain if it exists. */
+	destroy_swapchain(device);
+	device->swap_chain = new_swap_chain;
+
+	create_swapchain_images(device);
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
@@ -344,6 +471,7 @@ static void setup_swapchain(struct vulkan *vulkan)
 
 	get_present_queue_index(device);
 	get_colour_format(device);
+	create_swapchain(vulkan);
 }
 
 /* Set up vulkan using the specified window. */
@@ -385,6 +513,8 @@ void vulkan_destroy(struct vulkan *vulkan)
 
 	if (vulkan == NULL)
 		return;
+
+	destroy_swapchain(device);
 
 	if (device->surface)
 		vkDestroySurfaceKHR(vulkan->instance, device->surface, NULL);

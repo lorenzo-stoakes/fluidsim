@@ -70,10 +70,18 @@ struct vulkan_device {
 	VkCommandPool command_pool;
 	VkCommandBuffer command_buffer;
 
+	bool supports_blit;
+
 	VkFormat colour_format;
 	VkColorSpaceKHR colour_space;
 
 	VkSurfaceKHR surface;
+
+	VkSwapchainKHR swap_chain;
+
+	uint32_t image_count;
+	VkImage *images;
+	VkImageView *views;
 };
 
 struct vulkan {
