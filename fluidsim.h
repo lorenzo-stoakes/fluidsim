@@ -21,6 +21,9 @@
 /* Determine size of static array. */
 #define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
 
+/* Iterate through a static array. */
+#define FOR_EACH(__i, __arr) for (__i = 0; i < ARRAY_SIZE(__arr); i++)
+
 /* The vulkan queues we care about. */
 #define QUEUE_MASK (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | \
 	VK_QUEUE_TRANSFER_BIT)

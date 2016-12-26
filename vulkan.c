@@ -57,7 +57,7 @@ static void populate_queues(struct vulkan_device *device)
 	uint32_t i, j, assigned = 0;
 
 	/* Default each index to -1 to indicate unassigned. */
-	for (i = 0; i < QUEUE_COUNT; i++) {
+	FOR_EACH(i, queue_flags) {
 		VkFlags flag = queue_flags[i];
 
 		device->queue_index_by_flag[flag] = -1;
@@ -68,7 +68,7 @@ static void populate_queues(struct vulkan_device *device)
 			&device->queue_family_properties[i];
 		VkFlags flags = queue->queueFlags & QUEUE_MASK;
 
-		for (j = 0; j < QUEUE_COUNT; j++) {
+		FOR_EACH(j, queue_flags) {
 			VkFlags flag = queue_flags[j];
 
 			if (!(flags & flag))
@@ -84,10 +84,10 @@ static void populate_queues(struct vulkan_device *device)
 		}
 	}
 
-	if (assigned != QUEUE_COUNT) {
+	if (assigned != ARRAY_SIZE(queue_flags)) {
 		/* Give some useful feedback if we can't assign all queues. */
 		err("Couldn't populate queues:");
-		for (i = 0; i < QUEUE_COUNT; i++)
+		FOR_EACH(i, queue_flags)
 			if (device->queue_index_by_flag[queue_flags[i]] == -1)
 				err("  Missing %s", queue_names[i]);
 		fatal("Aborting.");
