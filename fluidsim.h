@@ -61,7 +61,7 @@ struct vulkan_device {
 	VkExtensionProperties *extension_properties;
 
 	VkQueue queue;
-
+	VkFormat format;
 	VkCommandPool command_pool;
 };
 

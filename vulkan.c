@@ -10,7 +10,14 @@ static VkFlags queue_flags[] = {
 	VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT
 };
 
-#define QUEUE_COUNT (ARRAY_SIZE(queue_flags))
+/* Acceptable colour depths. */
+static VkFormat depths_by_preference[] = {
+	VK_FORMAT_D32_SFLOAT_S8_UINT,
+	VK_FORMAT_D32_SFLOAT,
+	VK_FORMAT_D24_UNORM_S8_UINT,
+	VK_FORMAT_D16_UNORM_S8_UINT,
+	VK_FORMAT_D16_UNORM
+};
 
 static char *queue_names[] = {
 	"graphics queue", "compute queue", "transfer queue"
@@ -122,6 +129,25 @@ static VkDeviceQueueCreateInfo *populate_device_queue_info(
 	return queue_create_infos;
 }
 
+static void get_depth_format(struct vulkan_device *device)
+{
+	uint32_t i;
+
+	FOR_EACH(i, depths_by_preference) {
+		VkFormatProperties properties;
+
+		device->format = depths_by_preference[i];
+		vkGetPhysicalDeviceFormatProperties(device->physical,
+						device->format, &properties);
+
+		if (properties.optimalTilingFeatures &
+			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			return;
+	}
+
+	fatal("Unable to find acceptable depth format :(");
+}
+
 /* Populate device details contained within vulkan struct. */
 static void populate_device(struct vulkan *vulkan)
 {
@@ -181,6 +207,8 @@ static void populate_device(struct vulkan *vulkan)
 	vkGetDeviceQueue(device->logical,
 			device->queue_index_by_flag[VK_QUEUE_GRAPHICS_BIT], 0,
 			&device->queue);
+
+	get_depth_format(device);
 }
 
 static void create_command_pool(struct vulkan_device *device)
