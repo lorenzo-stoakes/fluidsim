@@ -234,71 +234,6 @@ static void destroy_command_buffers(struct vulkan_device *device)
 	free(device->draw_command_buffers);
 }
 
-/* Populate device details contained within vulkan struct and setup device. */
-static void setup_device(struct vulkan *vulkan)
-{
-	uint32_t gpu_count = 0;
-	uint32_t count;
-	struct vulkan_device *device = &vulkan->device;
-	VkDeviceCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		/* TODO: Default to not enabling any features, later enable? */
-		.pEnabledFeatures = NULL
-	};
-
-	check_err("vkEnumeratePhysicalDevices (count)",
-		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count, NULL));
-	if (gpu_count < 1)
-		fatal("Need at least 1 compatible GPU.");
-
-	/* We only retrieve the 1st physical device. */
-	gpu_count = 1;
-	check_err("vkEnumeratePhysicalDevices (enumerate)",
-		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count,
-					&device->physical));
-
-	vkGetPhysicalDeviceProperties(device->physical,
-				&device->properties);
-	vkGetPhysicalDeviceFeatures(device->physical,
-				&device->features);
-	vkGetPhysicalDeviceMemoryProperties(device->physical,
-				&device->memory_properties);
-
-	vkGetPhysicalDeviceQueueFamilyProperties(device->physical,
-		&count, NULL);
-	device->queue_family_property_count = count;
-	device->queue_family_properties =
-		must_malloc(sizeof(VkQueueFamilyProperties) * count);
-	vkGetPhysicalDeviceQueueFamilyProperties(device->physical,
-		&count, device->queue_family_properties);
-	populate_queues(device);
-
-	check_err("vkEnumerateDeviceExtensionProperties (count)",
-		vkEnumerateDeviceExtensionProperties(device->physical,
-			NULL, &count, NULL));
-	device->extension_property_count = count;
-	device->extension_properties =
-		must_malloc(sizeof(VkExtensionProperties) * count);
-	check_err("vkEnumerateDeviceExtensionProperties (enumerate)",
-		vkEnumerateDeviceExtensionProperties(device->physical,
-			NULL, &count, device->extension_properties));
-
-	device->queue_create_infos =
-		populate_device_queue_info(device, &create_info);
-
-	check_err("vkCreateDevice",
-		vkCreateDevice(device->physical, &create_info, NULL,
-			&device->logical));
-
-	vkGetDeviceQueue(device->logical,
-			device->queue_index_by_flag[VK_QUEUE_GRAPHICS_BIT], 0,
-			&device->queue);
-
-	get_depth_format(device);
-
-	create_command_pool(device);
-	create_start_setup_command_buffer(device);
-}
 
 /* Determine the graphics queue that supports presentation. */
 static void get_present_queue_index(struct vulkan_device *device)
@@ -511,6 +446,74 @@ static void setup_swapchain(struct vulkan *vulkan)
 	create_swapchain(vulkan);
 }
 
+/* Populate device details contained within vulkan struct and setup device. */
+static void setup_device(struct vulkan *vulkan)
+{
+	uint32_t gpu_count = 0;
+	uint32_t count;
+	struct vulkan_device *device = &vulkan->device;
+	VkDeviceCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		/* TODO: Default to not enabling any features, later enable? */
+		.pEnabledFeatures = NULL
+	};
+
+	check_err("vkEnumeratePhysicalDevices (count)",
+		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count, NULL));
+	if (gpu_count < 1)
+		fatal("Need at least 1 compatible GPU.");
+
+	/* We only retrieve the 1st physical device. */
+	gpu_count = 1;
+	check_err("vkEnumeratePhysicalDevices (enumerate)",
+		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count,
+					&device->physical));
+
+	vkGetPhysicalDeviceProperties(device->physical,
+				&device->properties);
+	vkGetPhysicalDeviceFeatures(device->physical,
+				&device->features);
+	vkGetPhysicalDeviceMemoryProperties(device->physical,
+				&device->memory_properties);
+
+	vkGetPhysicalDeviceQueueFamilyProperties(device->physical,
+		&count, NULL);
+	device->queue_family_property_count = count;
+	device->queue_family_properties =
+		must_malloc(sizeof(VkQueueFamilyProperties) * count);
+	vkGetPhysicalDeviceQueueFamilyProperties(device->physical,
+		&count, device->queue_family_properties);
+	populate_queues(device);
+
+	check_err("vkEnumerateDeviceExtensionProperties (count)",
+		vkEnumerateDeviceExtensionProperties(device->physical,
+			NULL, &count, NULL));
+	device->extension_property_count = count;
+	device->extension_properties =
+		must_malloc(sizeof(VkExtensionProperties) * count);
+	check_err("vkEnumerateDeviceExtensionProperties (enumerate)",
+		vkEnumerateDeviceExtensionProperties(device->physical,
+			NULL, &count, device->extension_properties));
+
+	device->queue_create_infos =
+		populate_device_queue_info(device, &create_info);
+
+	check_err("vkCreateDevice",
+		vkCreateDevice(device->physical, &create_info, NULL,
+			&device->logical));
+
+	vkGetDeviceQueue(device->logical,
+			device->queue_index_by_flag[VK_QUEUE_GRAPHICS_BIT], 0,
+			&device->queue);
+
+	get_depth_format(device);
+
+	create_command_pool(device);
+	create_start_setup_command_buffer(device);
+	setup_swapchain(vulkan);
+	create_command_buffers(device);
+}
+
 /* Set up vulkan using the specified window. */
 struct vulkan *vulkan_make(struct window *win)
 {
@@ -539,8 +542,6 @@ struct vulkan *vulkan_make(struct window *win)
 		vkCreateInstance(&instance_create_info, NULL, &ret->instance));
 
 	setup_device(ret);
-	setup_swapchain(ret);
-	create_command_buffers(&ret->device);
 
 	return ret;
 }
