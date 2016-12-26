@@ -876,10 +876,12 @@ struct vulkan *vulkan_make(struct window *win)
 /* Cleanup vulkan data structures. */
 void vulkan_destroy(struct vulkan *vulkan)
 {
-	struct vulkan_device *device = &vulkan->device;
+	struct vulkan_device *device;
 
 	if (vulkan == NULL)
 		return;
+
+	device = &vulkan->device;
 
 	destroy_swapchain(device);
 
