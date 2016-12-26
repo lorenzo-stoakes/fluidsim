@@ -528,8 +528,7 @@ void vulkan_destroy(struct vulkan *vulkan)
 	if (device->surface)
 		vkDestroySurfaceKHR(vulkan->instance, device->surface, NULL);
 
-	if (device->setup_command_buffer)
-		destroy_setup_command_buffer(device);
+	destroy_setup_command_buffer(device);
 
 	if (device->command_pool)
 		vkDestroyCommandPool(device->logical,

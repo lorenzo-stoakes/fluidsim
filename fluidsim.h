@@ -68,7 +68,7 @@ struct vulkan_device {
 	VkQueue queue;
 	VkFormat format;
 	VkCommandPool command_pool;
-	VkCommandBuffer setup_command_buffer;
+	VkCommandBuffer setup_command_buffer, *draw_command_buffers;
 
 	bool supports_blit;
 
