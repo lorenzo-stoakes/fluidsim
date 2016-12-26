@@ -261,6 +261,91 @@ static void setup_device(struct vulkan *vulkan)
 	start_command_buffer(device);
 }
 
+/* Determine the graphics queue that supports presentation. */
+static void get_present_queue_index(struct vulkan_device *device)
+{
+	uint32_t i;
+	VkBool32 supports_present;
+	int gfx_index = device->queue_index_by_flag[VK_QUEUE_GRAPHICS_BIT];
+
+	/* First, check if our graphics */
+	vkGetPhysicalDeviceSurfaceSupportKHR(device->physical, gfx_index,
+					device->surface, &supports_present);
+	if (supports_present) {
+		device->present_queue_index = gfx_index;
+		return;
+	}
+
+	/*
+	 * Our gfx queue doesn't support present - look for a separate present
+	 * queue.
+	 */
+	for (i = 0; i < device->queue_family_property_count; i++) {
+		VkQueueFamilyProperties *queue =
+			&device->queue_family_properties[i];
+		VkFlags flags = queue->queueFlags & QUEUE_MASK;
+
+		if (i == (uint32_t)gfx_index ||
+			!(flags & VK_QUEUE_GRAPHICS_BIT))
+			continue;
+
+		vkGetPhysicalDeviceSurfaceSupportKHR(device->physical, i,
+						device->surface,
+						&supports_present);
+
+		if (supports_present) {
+			device->present_queue_index = i;
+			return;
+		}
+	}
+
+	fatal("Unable to find a present device queue.");
+}
+
+static void get_colour_format(struct vulkan_device *device)
+{
+	uint32_t format_count;
+	VkSurfaceFormatKHR surface_format;
+
+	check_err("vkGetPhysicalDeviceSurfaceFormatsKHR (count)",
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device->physical,
+						device->surface, &format_count,
+						NULL));
+	if (format_count == 0)
+		fatal("Need at least 1 surface format.");
+	/* We always take the 1st. */
+	format_count = 1;
+	check_err("vkGetPhysicalDeviceSurfaceFormatsKHR (enumerate)",
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device->physical,
+						device->surface, &format_count,
+						&surface_format));
+
+	/* If none preferred, make an assumption. */
+	device->colour_format =
+		surface_format.format == VK_FORMAT_UNDEFINED
+		? VK_FORMAT_B8G8R8A8_UNORM
+		: surface_format.format;
+	device->colour_space = surface_format.colorSpace;
+}
+
+/* Setup our swapchain. */
+static void setup_swapchain(struct vulkan *vulkan)
+{
+	struct vulkan_device *device = &vulkan->device;
+	VkXcbSurfaceCreateInfoKHR create_info = {
+		.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+		.connection = vulkan->win->conn,
+		.window = vulkan->win->win
+	};
+
+	check_err("vkCreateXcbSurfaceKHR",
+		vkCreateXcbSurfaceKHR(vulkan->instance, &create_info, NULL,
+				&device->surface));
+
+	get_present_queue_index(device);
+	get_colour_format(device);
+}
+
 /* Set up vulkan using the specified window. */
 struct vulkan *vulkan_make(struct window *win)
 {
@@ -289,6 +374,7 @@ struct vulkan *vulkan_make(struct window *win)
 		vkCreateInstance(&instance_create_info, NULL, &ret->instance));
 
 	setup_device(ret);
+	setup_swapchain(ret);
 
 	return ret;
 }
@@ -299,6 +385,9 @@ void vulkan_destroy(struct vulkan *vulkan)
 
 	if (vulkan == NULL)
 		return;
+
+	if (device->surface)
+		vkDestroySurfaceKHR(vulkan->instance, device->surface, NULL);
 
 	if (device->command_buffer)
 		vkFreeCommandBuffers(device->logical, device->command_pool, 1,

@@ -56,6 +56,7 @@ struct vulkan_device {
 	VkQueueFamilyProperties *queue_family_properties;
 	/* We waste some space here, but it's not much. */
 	int queue_index_by_flag[QUEUE_MAX];
+	int present_queue_index;
 
 	VkDeviceQueueCreateInfo *queue_create_infos;
 
@@ -66,6 +67,11 @@ struct vulkan_device {
 	VkFormat format;
 	VkCommandPool command_pool;
 	VkCommandBuffer command_buffer;
+
+	VkFormat colour_format;
+	VkColorSpaceKHR colour_space;
+
+	VkSurfaceKHR surface;
 };
 
 struct vulkan {
