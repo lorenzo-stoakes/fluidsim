@@ -173,8 +173,19 @@ static void create_command_pool(struct vulkan_device *device)
 				&device->command_pool));
 }
 
-/* Create device command buffer. */
-static void create_command_buffer(struct vulkan_device *device)
+/* Cleanup setup command buffer if present. */
+static void destroy_setup_command_buffer(struct vulkan_device *device)
+{
+	if (!device->setup_command_buffer)
+		return;
+
+	vkFreeCommandBuffers(device->logical, device->command_pool, 1,
+			&device->setup_command_buffer);
+	device->setup_command_buffer = VK_NULL_HANDLE;
+}
+
+/* Create/starts setup command buffer, cleaning up existing if present. */
+static void create_start_setup_command_buffer(struct vulkan_device *device)
 {
 	VkCommandBufferAllocateInfo alloc_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -182,21 +193,16 @@ static void create_command_buffer(struct vulkan_device *device)
 		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		.commandBufferCount = 1
 	};
-
-	check_err("vkAllocateCommandBuffers",
-		vkAllocateCommandBuffers(device->logical, &alloc_info,
-					&device->command_buffer));
-}
-
-/* Set command buffer to start recording. */
-static void start_command_buffer(struct vulkan_device *device)
-{
 	VkCommandBufferBeginInfo info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO
 	};
 
+	destroy_setup_command_buffer(device);
+	check_err("vkAllocateCommandBuffers",
+		vkAllocateCommandBuffers(device->logical, &alloc_info,
+					&device->setup_command_buffer));
 	check_err("vkBeginCommandBuffer",
-		vkBeginCommandBuffer(device->command_buffer, &info));
+		vkBeginCommandBuffer(device->setup_command_buffer, &info));
 }
 
 /* Populate device details contained within vulkan struct and setup device. */
@@ -262,8 +268,7 @@ static void setup_device(struct vulkan *vulkan)
 	get_depth_format(device);
 
 	create_command_pool(device);
-	create_command_buffer(device);
-	start_command_buffer(device);
+	create_start_setup_command_buffer(device);
 }
 
 /* Determine the graphics queue that supports presentation. */
@@ -523,9 +528,8 @@ void vulkan_destroy(struct vulkan *vulkan)
 	if (device->surface)
 		vkDestroySurfaceKHR(vulkan->instance, device->surface, NULL);
 
-	if (device->command_buffer)
-		vkFreeCommandBuffers(device->logical, device->command_pool, 1,
-				&device->command_buffer);
+	if (device->setup_command_buffer)
+		destroy_setup_command_buffer(device);
 
 	if (device->command_pool)
 		vkDestroyCommandPool(device->logical,
