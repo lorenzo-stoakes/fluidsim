@@ -275,9 +275,9 @@ static void destroy_command_buffers(struct vulkan_device *device)
 
 	vkFreeCommandBuffers(device->logical, device->command_pool,
 			device->image_count, device->draw_command_buffers);
-	free(device->draw_command_buffers);
-}
 
+	FREE_CLEAR(device->draw_command_buffers);
+}
 
 /* Determine the graphics queue that supports presentation. */
 static void get_present_queue_index(struct vulkan_device *device)
@@ -358,8 +358,8 @@ static void destroy_swapchain(struct vulkan_device *device)
 	for (i = 0; i < device->image_count; i++)
 		vkDestroyImageView(device->logical, device->views[i], NULL);
 
-	free(device->images);
-	free(device->views);
+	FREE_CLEAR(device->images);
+	FREE_CLEAR(device->views);
 
 	vkDestroySwapchainKHR(device->logical, device->swap_chain, NULL);
 }
@@ -794,7 +794,7 @@ static void destroy_frame_buffers(struct vulkan_device *device)
 		vkDestroyFramebuffer(device->logical, device->frame_buffers[i],
 				NULL);
 
-	free(device->frame_buffers);
+	FREE_CLEAR(device->frame_buffers);
 }
 
 /* Setup our swapchain. */
