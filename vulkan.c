@@ -450,6 +450,7 @@ static void create_link_surface(VkInstance instance, struct window *win,
 static void setup_phys_device(VkInstance instance, struct vulkan_device *device)
 {
 	uint32_t count, gpu_count = 0;
+
 	check_err("vkEnumeratePhysicalDevices (count)",
 		vkEnumeratePhysicalDevices(instance, &gpu_count, NULL));
 	if (gpu_count < 1)
