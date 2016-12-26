@@ -90,6 +90,8 @@ struct vulkan_device {
 
 	VkFormat depth_format;
 	struct depth_stencil depth_stencil;
+
+	VkRenderPass render_pass;
 };
 
 struct vulkan {
