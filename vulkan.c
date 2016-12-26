@@ -183,6 +183,21 @@ static void populate_device(struct vulkan *vulkan)
 			&device->queue);
 }
 
+static void create_command_pool(struct vulkan_device *device)
+{
+	uint32_t graphics_index =
+		device->queue_index_by_flag[VK_QUEUE_GRAPHICS_BIT];
+	VkCommandPoolCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.queueFamilyIndex = graphics_index,
+		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
+	};
+
+	check_err("vkCreateCommandPool",
+		vkCreateCommandPool(device->logical, &create_info, NULL,
+				&device->command_pool));
+}
+
 /* Set up vulkan using the specified window. */
 struct vulkan *vulkan_make(struct window *win)
 {
@@ -211,6 +226,8 @@ struct vulkan *vulkan_make(struct window *win)
 		vkCreateInstance(&instance_create_info, NULL, &ret->instance));
 
 	populate_device(ret);
+
+	create_command_pool(&ret->device);
 
 	return ret;
 }
