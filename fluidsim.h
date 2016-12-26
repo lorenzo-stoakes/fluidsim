@@ -24,6 +24,8 @@
 /* Iterate through a static array. */
 #define FOR_EACH(__i, __arr) for (__i = 0; __i < ARRAY_SIZE(__arr); __i++)
 
+#define MIN(__x, __y) (__x <= __y ? __x : __y)
+
 /* The vulkan queues we care about. */
 #define QUEUE_MASK (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | \
 	VK_QUEUE_TRANSFER_BIT)
