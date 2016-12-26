@@ -538,6 +538,23 @@ static void create_instance(struct vulkan *vulkan)
 		vkCreateInstance(&instance_create_info, NULL, &vulkan->instance));
 }
 
+/* Determine memory type index that fulfills property_mask, or -1 if not found. */
+static int get_memory_type_index(struct vulkan_device *device, uint32_t type_mask,
+			VkMemoryPropertyFlags property_mask)
+{
+	uint32_t i;
+	VkPhysicalDeviceMemoryProperties properties = device->memory_properties;
+
+	for (i = 0; i < properties.memoryTypeCount; i++, type_mask >>= 1) {
+		VkMemoryPropertyFlags flags = properties.memoryTypes[i].propertyFlags;
+
+		if ((type_mask & 1) && (flags & property_mask) == property_mask)
+			return i;
+	}
+
+	return (uint32_t)-1;
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
