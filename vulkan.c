@@ -431,20 +431,27 @@ static void create_swapchain(struct vulkan *vulkan)
 	create_swapchain_images(device);
 }
 
+/* Create surface and link it to the window. */
+static void create_link_surface(VkInstance instance, struct window *win,
+				struct vulkan_device *device)
+{
+	VkXcbSurfaceCreateInfoKHR create_info = {
+		.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+		.connection = win->conn,
+		.window = win->win
+	};
+
+	check_err("vkCreateXcbSurfaceKHR",
+		vkCreateXcbSurfaceKHR(instance, &create_info, NULL,
+				&device->surface));
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
 	struct vulkan_device *device = &vulkan->device;
-	VkXcbSurfaceCreateInfoKHR create_info = {
-		.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
-		.connection = vulkan->win->conn,
-		.window = vulkan->win->win
-	};
 
-	check_err("vkCreateXcbSurfaceKHR",
-		vkCreateXcbSurfaceKHR(vulkan->instance, &create_info, NULL,
-				&device->surface));
-
+	create_link_surface(vulkan->instance, vulkan->win, device);
 	get_present_queue_index(device);
 	get_colour_format(device);
 	create_swapchain(vulkan);
