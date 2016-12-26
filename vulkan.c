@@ -161,6 +161,46 @@ static void get_depth_format(struct vulkan_device *device)
 	fatal("Unable to find acceptable depth format :(");
 }
 
+/* Setup semaphores and submit info structure. */
+static void setup_semaphores(struct vulkan_device *device)
+{
+	VkSemaphoreCreateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
+	};
+	VkSubmitInfo *submit_info = &device->submit_info;
+
+	check_err("vkCreateSemaphore (present complete)",
+		vkCreateSemaphore(device->logical, &info, NULL,
+				&device->present_complete));
+	check_err("vkCreateSemaphore (render complete)",
+		vkCreateSemaphore(device->logical, &info, NULL,
+				&device->render_complete));
+	check_err("vkCreateSemaphore (text overlay complete)",
+		vkCreateSemaphore(device->logical, &info, NULL,
+				&device->text_overlay_complete));
+
+	submit_info->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info->pWaitDstStageMask = &device->gfx_pipeline_stage_wait;
+
+	submit_info->waitSemaphoreCount = 1;
+	submit_info->pWaitSemaphores = &device->present_complete;
+
+	submit_info->signalSemaphoreCount = 1;
+	submit_info->pSignalSemaphores = &device->render_complete;
+}
+
+/* Clean up semaphore structures. */
+static void destroy_semaphores(struct vulkan_device *device)
+{
+	/* Assume one missing = all missing. */
+	if (!device->present_complete)
+		return;
+
+	vkDestroySemaphore(device->logical, device->present_complete, NULL);
+	vkDestroySemaphore(device->logical, device->render_complete, NULL);
+	vkDestroySemaphore(device->logical, device->text_overlay_complete, NULL);
+}
+
 /* Create device command pool. */
 static void create_command_pool(struct vulkan_device *device)
 {
@@ -735,11 +775,16 @@ static void setup_device(struct vulkan *vulkan)
 {
 	struct vulkan_device *device = &vulkan->device;
 
+	/* The pipeline stage we wait at for gfx queue submissions. */
+	device->gfx_pipeline_stage_wait =
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
 	setup_phys_device(vulkan->instance, device);
 	populate_queues(device);
 	get_extension_properties(device);
 	setup_logical_device(device);
 	get_depth_format(device);
+	setup_semaphores(device);
 	create_command_pool(device);
 	create_start_setup_command_buffer(device);
 	setup_swapchain(vulkan);
@@ -777,6 +822,7 @@ void vulkan_destroy(struct vulkan *vulkan)
 	destroy_command_buffers(device);
 	destroy_setup_command_buffer(device);
 	destroy_depth_stencil(device);
+	destroy_semaphores(device);
 
 	vkDestroyRenderPass(device->logical, device->render_pass, NULL);
 	vkDestroyPipelineCache(device->logical, device->pipeline_cache, NULL);

@@ -91,6 +91,11 @@ struct vulkan_device {
 	VkFormat depth_format;
 	struct depth_stencil depth_stencil;
 
+	VkSemaphore present_complete, render_complete, text_overlay_complete;
+	VkSubmitInfo submit_info;
+
+	VkPipelineStageFlags gfx_pipeline_stage_wait;
+
 	VkRenderPass render_pass;
 
 	VkPipelineCache pipeline_cache;
