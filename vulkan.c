@@ -446,17 +446,6 @@ static void create_link_surface(VkInstance instance, struct window *win,
 				&device->surface));
 }
 
-/* Setup our swapchain. */
-static void setup_swapchain(struct vulkan *vulkan)
-{
-	struct vulkan_device *device = &vulkan->device;
-
-	create_link_surface(vulkan->instance, vulkan->win, device);
-	get_present_queue_index(device);
-	get_colour_format(device);
-	create_swapchain(vulkan);
-}
-
 /* Setup initial physical device structures. */
 static void setup_phys_device(VkInstance instance, struct vulkan_device *device)
 {
@@ -524,6 +513,42 @@ static void setup_logical_device(struct vulkan_device *device)
 			&device->queue);
 }
 
+/* Create and setup new vulkan instance. */
+static void create_instance(struct vulkan *vulkan)
+{
+	char *name = strdup("fluidsim");
+	VkApplicationInfo app_info = {
+		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pApplicationName = name,
+		.applicationVersion = FLUIDSIM_VER,
+		.pEngineName = name,
+		.engineVersion = FLUIDSIM_VER,
+		.apiVersion = VK_API_VERSION_1_0
+	};
+	VkInstanceCreateInfo instance_create_info = {
+		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.enabledExtensionCount = ARRAY_SIZE(extensions),
+		.ppEnabledExtensionNames = extensions
+	};
+
+	vulkan->app_info = app_info;
+	instance_create_info.pApplicationInfo = &vulkan->app_info;
+
+	check_err("vkCreateInstance",
+		vkCreateInstance(&instance_create_info, NULL, &vulkan->instance));
+}
+
+/* Setup our swapchain. */
+static void setup_swapchain(struct vulkan *vulkan)
+{
+	struct vulkan_device *device = &vulkan->device;
+
+	create_link_surface(vulkan->instance, vulkan->win, device);
+	get_present_queue_index(device);
+	get_colour_format(device);
+	create_swapchain(vulkan);
+}
+
 /* Populate device details contained within vulkan struct and setup device. */
 static void setup_device(struct vulkan *vulkan)
 {
@@ -544,29 +569,9 @@ static void setup_device(struct vulkan *vulkan)
 struct vulkan *vulkan_make(struct window *win)
 {
 	struct vulkan *ret = must_malloc(sizeof(struct vulkan));
-	char *name = strdup("fluidsim");
-	VkApplicationInfo app_info = {
-		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		.pApplicationName = name,
-		.applicationVersion = FLUIDSIM_VER,
-		.pEngineName = name,
-		.engineVersion = FLUIDSIM_VER,
-		.apiVersion = VK_API_VERSION_1_0
-	};
-	VkInstanceCreateInfo instance_create_info = {
-		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-		.enabledExtensionCount = ARRAY_SIZE(extensions),
-		.ppEnabledExtensionNames = extensions
-	};
 
 	ret->win = win;
-	ret->app_info = app_info;
-
-	instance_create_info.pApplicationInfo = &ret->app_info;
-
-	check_err("vkCreateInstance",
-		vkCreateInstance(&instance_create_info, NULL, &ret->instance));
-
+	create_instance(ret);
 	setup_device(ret);
 
 	return ret;
