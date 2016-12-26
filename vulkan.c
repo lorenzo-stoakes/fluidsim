@@ -262,19 +262,21 @@ struct vulkan *vulkan_make(struct window *win)
 
 void vulkan_destroy(struct vulkan *vulkan)
 {
+	struct vulkan_device *device = &vulkan->device;
+
 	if (vulkan == NULL)
 		return;
 
-	if (vulkan->device.command_pool)
-		vkDestroyCommandPool(vulkan->device.logical,
-				vulkan->device.command_pool, NULL);
+	if (device->command_pool)
+		vkDestroyCommandPool(device->logical,
+				device->command_pool, NULL);
 
-	if (vulkan->device.logical)
-		vkDestroyDevice(vulkan->device.logical, NULL);
+	if (device->logical)
+		vkDestroyDevice(device->logical, NULL);
 
-	free(vulkan->device.queue_family_properties);
-	free(vulkan->device.extension_properties);
-	free(vulkan->device.queue_create_infos);
+	free(device->queue_family_properties);
+	free(device->extension_properties);
+	free(device->queue_create_infos);
 	free((char *)vulkan->app_info.pApplicationName);
 
 	vkDestroyInstance(vulkan->instance, NULL);
