@@ -555,6 +555,74 @@ static int get_memory_type_index(struct vulkan_device *device, uint32_t type_mas
 	return (uint32_t)-1;
 }
 
+/* Setup device depth stencil. */
+static void setup_depth_stencil(struct window *win,
+				struct vulkan_device *device)
+{
+	VkMemoryRequirements mem_reqs;
+	struct depth_stencil *stencil = &device->depth_stencil;
+	VkImageCreateInfo image_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.imageType = VK_IMAGE_TYPE_2D,
+		.format = device->depth_format,
+		.extent = { win->width, win->height, 1 },
+		.mipLevels = 1,
+		.arrayLayers = 1,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.tiling = VK_IMAGE_TILING_OPTIMAL,
+		.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+	};
+	VkMemoryAllocateInfo mem_info = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO
+	};
+	VkImageViewCreateInfo view_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = device->depth_format,
+		.subresourceRange = {
+			.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1
+		}
+	};
+
+	check_err("vkCreateImage",
+		vkCreateImage(device->logical, &image_info, NULL, &stencil->image));
+	view_info.image = stencil->image;
+
+	vkGetImageMemoryRequirements(device->logical, stencil->image, &mem_reqs);
+	mem_info.allocationSize = mem_reqs.size;
+	mem_info.memoryTypeIndex = get_memory_type_index(device, mem_reqs.memoryTypeBits,
+						VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	if (mem_info.memoryTypeIndex == (uint32_t)-1)
+		fatal("Unable to get memory type for local bit property.");
+	check_err("vkAllocateMemory",
+		vkAllocateMemory(device->logical, &mem_info, NULL,
+				&stencil->mem));
+	check_err("vkBindImageMemory",
+		vkBindImageMemory(device->logical, stencil->image,
+				stencil->mem, 0));
+
+	check_err("vkCreateImageView",
+		vkCreateImageView(device->logical, &view_info, NULL, &stencil->view));
+}
+
+/* Cleanup deptch stencil data structures. */
+static void destroy_depth_stencil(struct vulkan_device *device)
+{
+	struct depth_stencil *stencil = &device->depth_stencil;
+
+	if (!stencil)
+		return;
+
+	vkDestroyImageView(device->logical, stencil->view, NULL);
+	vkDestroyImage(device->logical, stencil->image, NULL);
+	vkFreeMemory(device->logical, stencil->mem, NULL);
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
@@ -580,6 +648,7 @@ static void setup_device(struct vulkan *vulkan)
 	create_start_setup_command_buffer(device);
 	setup_swapchain(vulkan);
 	create_command_buffers(device);
+	setup_depth_stencil(vulkan->win, device);
 }
 
 /* Set up vulkan using the specified window. */
@@ -609,6 +678,7 @@ void vulkan_destroy(struct vulkan *vulkan)
 
 	destroy_command_buffers(device);
 	destroy_setup_command_buffer(device);
+	destroy_depth_stencil(device);
 
 	if (device->command_pool)
 		vkDestroyCommandPool(device->logical,

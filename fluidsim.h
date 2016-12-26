@@ -45,6 +45,12 @@ struct window {
 #error Only linux supported.
 #endif
 
+struct depth_stencil {
+	VkImage image;
+	VkDeviceMemory mem;
+	VkImageView view;
+};
+
 struct vulkan_device {
 	VkPhysicalDevice physical;
 	VkDevice logical;
@@ -83,6 +89,7 @@ struct vulkan_device {
 	VkImageView *views;
 
 	VkFormat depth_format;
+	struct depth_stencil depth_stencil;
 };
 
 struct vulkan {
