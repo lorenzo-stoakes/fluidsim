@@ -39,6 +39,7 @@ struct window {
 #endif
 
 struct vulkan_device {
+	VkPhysicalDevice physical;
 	VkDevice logical;
 
 	VkPhysicalDeviceProperties properties;
@@ -63,7 +64,6 @@ struct vulkan {
 
 	VkApplicationInfo app_info;
 	VkInstance instance;
-	VkPhysicalDevice physical_device;
 };
 
 enum fluidsim_event {

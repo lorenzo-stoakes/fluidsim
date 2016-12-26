@@ -143,39 +143,39 @@ static void populate_device(struct vulkan *vulkan)
 	gpu_count = 1;
 	check_err("vkEnumeratePhysicalDevices (enumerate)",
 		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count,
-					&vulkan->physical_device));
+					&device->physical));
 
-	vkGetPhysicalDeviceProperties(vulkan->physical_device,
+	vkGetPhysicalDeviceProperties(device->physical,
 				&device->properties);
-	vkGetPhysicalDeviceFeatures(vulkan->physical_device,
+	vkGetPhysicalDeviceFeatures(device->physical,
 				&device->features);
-	vkGetPhysicalDeviceMemoryProperties(vulkan->physical_device,
+	vkGetPhysicalDeviceMemoryProperties(device->physical,
 				&device->memory_properties);
 
-	vkGetPhysicalDeviceQueueFamilyProperties(vulkan->physical_device,
+	vkGetPhysicalDeviceQueueFamilyProperties(device->physical,
 		&count, NULL);
 	device->queue_family_property_count = count;
 	device->queue_family_properties =
 		must_malloc(sizeof(VkQueueFamilyProperties) * count);
-	vkGetPhysicalDeviceQueueFamilyProperties(vulkan->physical_device,
+	vkGetPhysicalDeviceQueueFamilyProperties(device->physical,
 		&count, device->queue_family_properties);
 	populate_queues(device);
 
 	check_err("vkEnumerateDeviceExtensionProperties (count)",
-		vkEnumerateDeviceExtensionProperties(vulkan->physical_device,
+		vkEnumerateDeviceExtensionProperties(device->physical,
 			NULL, &count, NULL));
 	device->extension_property_count = count;
 	device->extension_properties =
 		must_malloc(sizeof(VkExtensionProperties) * count);
 	check_err("vkEnumerateDeviceExtensionProperties (enumerate)",
-		vkEnumerateDeviceExtensionProperties(vulkan->physical_device,
+		vkEnumerateDeviceExtensionProperties(device->physical,
 			NULL, &count, device->extension_properties));
 
 	device->queue_create_infos =
 		populate_device_queue_info(device, &create_info);
 
 	check_err("vkCreateDevice",
-		vkCreateDevice(vulkan->physical_device, &create_info, NULL,
+		vkCreateDevice(device->physical, &create_info, NULL,
 			&device->logical));
 }
 
