@@ -24,6 +24,7 @@
 /* Iterate through a static array. */
 #define FOR_EACH(__i, __arr) for (__i = 0; __i < ARRAY_SIZE(__arr); __i++)
 
+/* Find minimum of two values. */
 #define MIN(__x, __y) (__x <= __y ? __x : __y)
 
 /* The vulkan queues we care about. */
