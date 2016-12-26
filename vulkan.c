@@ -797,6 +797,30 @@ static void destroy_frame_buffers(struct vulkan_device *device)
 	FREE_CLEAR(device->frame_buffers);
 }
 
+/* Flush the setup command buffer. */
+static void flush_setup_command_buffer(struct vulkan_device *device)
+{
+	VkSubmitInfo info = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &device->setup_command_buffer
+	};
+
+	if (!device->setup_command_buffer)
+		return;
+
+	check_err("vkEndCommandBuffer",
+		vkEndCommandBuffer(device->setup_command_buffer));
+	check_err("vkQueueSubmit",
+		vkQueueSubmit(device->queue, 1, &info, VK_NULL_HANDLE));
+	check_err("vkQueueWaitIdle",
+		vkQueueWaitIdle(device->queue));
+
+	vkFreeCommandBuffers(device->logical, device->command_pool, 1,
+			&device->setup_command_buffer);
+	device->setup_command_buffer = VK_NULL_HANDLE;
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
@@ -831,6 +855,9 @@ static void setup_device(struct vulkan *vulkan)
 	setup_render_pass(device);
 	setup_pipeline_cache(device);
 	setup_frame_buffers(vulkan->win, device);
+	flush_setup_command_buffer(device);
+	/* TODO: Necessary? */
+	create_start_setup_command_buffer(device);
 }
 
 /* Set up vulkan using the specified window. */
