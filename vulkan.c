@@ -165,6 +165,32 @@ static void create_command_pool(struct vulkan_device *device)
 				&device->command_pool));
 }
 
+/* Create device command buffer. */
+static void create_command_buffer(struct vulkan_device *device)
+{
+	VkCommandBufferAllocateInfo alloc_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = device->command_pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1
+	};
+
+	check_err("vkAllocateCommandBuffers",
+		vkAllocateCommandBuffers(device->logical, &alloc_info,
+					&device->command_buffer));
+}
+
+/* Set command buffer to start recording. */
+static void start_command_buffer(struct vulkan_device *device)
+{
+	VkCommandBufferBeginInfo info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO
+	};
+
+	check_err("vkBeginCommandBuffer",
+		vkBeginCommandBuffer(device->command_buffer, &info));
+}
+
 /* Populate device details contained within vulkan struct. */
 static void populate_device(struct vulkan *vulkan)
 {
@@ -228,6 +254,8 @@ static void populate_device(struct vulkan *vulkan)
 	get_depth_format(device);
 
 	create_command_pool(device);
+	create_command_buffer(device);
+	start_command_buffer(device);
 }
 
 /* Set up vulkan using the specified window. */
@@ -268,6 +296,10 @@ void vulkan_destroy(struct vulkan *vulkan)
 
 	if (vulkan == NULL)
 		return;
+
+	if (device->command_buffer)
+		vkFreeCommandBuffers(device->logical, device->command_pool, 1,
+				&device->command_buffer);
 
 	if (device->command_pool)
 		vkDestroyCommandPool(device->logical,

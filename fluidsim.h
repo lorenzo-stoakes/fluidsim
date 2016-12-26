@@ -63,6 +63,7 @@ struct vulkan_device {
 	VkQueue queue;
 	VkFormat format;
 	VkCommandPool command_pool;
+	VkCommandBuffer command_buffer;
 };
 
 struct vulkan {
