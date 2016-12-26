@@ -307,6 +307,7 @@ static void get_present_queue_index(struct vulkan_device *device)
 	fatal("Unable to find a present device queue.");
 }
 
+/* Determine colour format to use for device. */
 static void get_colour_format(struct vulkan_device *device)
 {
 	uint32_t format_count;
@@ -333,6 +334,7 @@ static void get_colour_format(struct vulkan_device *device)
 	device->colour_space = surface_format.colorSpace;
 }
 
+/* Destroy current swapchain, if exists. */
 static void destroy_swapchain(struct vulkan_device *device)
 {
 	uint32_t i;
@@ -349,6 +351,7 @@ static void destroy_swapchain(struct vulkan_device *device)
 	vkDestroySwapchainKHR(device->logical, device->swap_chain, NULL);
 }
 
+/* Create swapchain image/image views. */
 static void create_swapchain_images(struct vulkan_device *device)
 {
 	uint32_t i;
@@ -507,6 +510,7 @@ struct vulkan *vulkan_make(struct window *win)
 	return ret;
 }
 
+/* Cleanup vulkan data structures. */
 void vulkan_destroy(struct vulkan *vulkan)
 {
 	struct vulkan_device *device = &vulkan->device;

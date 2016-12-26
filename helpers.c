@@ -31,6 +31,7 @@ void dyn_push(struct dyn_arr *arr, dyn_arr_t val)
 	arr->vec[arr->count++] = val;
 }
 
+/* Cleanup dynamic array. */
 void dyn_destroy(struct dyn_arr *arr)
 {
 	if (arr == NULL)
