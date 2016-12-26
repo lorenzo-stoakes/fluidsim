@@ -446,27 +446,19 @@ static void setup_swapchain(struct vulkan *vulkan)
 	create_swapchain(vulkan);
 }
 
-/* Populate device details contained within vulkan struct and setup device. */
-static void setup_device(struct vulkan *vulkan)
+/* Setup initial physical device structures. */
+static void setup_phys_device(VkInstance instance, struct vulkan_device *device)
 {
-	uint32_t gpu_count = 0;
-	uint32_t count;
-	struct vulkan_device *device = &vulkan->device;
-	VkDeviceCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		/* TODO: Default to not enabling any features, later enable? */
-		.pEnabledFeatures = NULL
-	};
-
+	uint32_t count, gpu_count = 0;
 	check_err("vkEnumeratePhysicalDevices (count)",
-		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count, NULL));
+		vkEnumeratePhysicalDevices(instance, &gpu_count, NULL));
 	if (gpu_count < 1)
 		fatal("Need at least 1 compatible GPU.");
 
 	/* We only retrieve the 1st physical device. */
 	gpu_count = 1;
 	check_err("vkEnumeratePhysicalDevices (enumerate)",
-		vkEnumeratePhysicalDevices(vulkan->instance, &gpu_count,
+		vkEnumeratePhysicalDevices(instance, &gpu_count,
 					&device->physical));
 
 	vkGetPhysicalDeviceProperties(device->physical,
@@ -483,6 +475,20 @@ static void setup_device(struct vulkan *vulkan)
 		must_malloc(sizeof(VkQueueFamilyProperties) * count);
 	vkGetPhysicalDeviceQueueFamilyProperties(device->physical,
 		&count, device->queue_family_properties);
+}
+
+/* Populate device details contained within vulkan struct and setup device. */
+static void setup_device(struct vulkan *vulkan)
+{
+	uint32_t count;
+	struct vulkan_device *device = &vulkan->device;
+	VkDeviceCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		/* TODO: Default to not enabling any features, later enable? */
+		.pEnabledFeatures = NULL
+	};
+
+	setup_phys_device(vulkan->instance, device);
 	populate_queues(device);
 
 	check_err("vkEnumerateDeviceExtensionProperties (count)",
