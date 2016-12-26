@@ -129,6 +129,13 @@ static VkDeviceQueueCreateInfo *populate_device_queue_info(
 	}
 	create_info->pQueueCreateInfos = queue_create_infos;
 
+	/*
+	 * TODO: This information is kept around since it's not clear whether
+	 * this needs to be kept in memory or not and rather than just free it
+	 * and hope for the best I'm being cautious. Check if necessary.
+	 */
+
+	/* We return a pointer so we can clean this up later. */
 	return queue_create_infos;
 }
 
