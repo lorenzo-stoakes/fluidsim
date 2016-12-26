@@ -1,5 +1,6 @@
 #include "fluidsim.h"
 
+/* Extensions we want to enable. */
 static const char *const extensions[] = {
 	VK_KHR_SURFACE_EXTENSION_NAME,
 	VK_KHR_XCB_SURFACE_EXTENSION_NAME
@@ -9,6 +10,9 @@ static const char *const extensions[] = {
 static VkFlags queue_flags[] = {
 	VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT
 };
+static char *queue_names[] = {
+	"graphics queue", "compute queue", "transfer queue"
+};
 
 /* Acceptable colour depths. */
 static VkFormat depths_by_preference[] = {
@@ -17,10 +21,6 @@ static VkFormat depths_by_preference[] = {
 	VK_FORMAT_D24_UNORM_S8_UINT,
 	VK_FORMAT_D16_UNORM_S8_UINT,
 	VK_FORMAT_D16_UNORM
-};
-
-static char *queue_names[] = {
-	"graphics queue", "compute queue", "transfer queue"
 };
 
 /* Check if the VkResult is VK_SUCCESS, otherwise report error. */
@@ -129,6 +129,7 @@ static VkDeviceQueueCreateInfo *populate_device_queue_info(
 	return queue_create_infos;
 }
 
+/* Get depth format from preferred list. */
 static void get_depth_format(struct vulkan_device *device)
 {
 	uint32_t i;
@@ -148,6 +149,7 @@ static void get_depth_format(struct vulkan_device *device)
 	fatal("Unable to find acceptable depth format :(");
 }
 
+/* Create device command pool. */
 static void create_command_pool(struct vulkan_device *device)
 {
 	uint32_t graphics_index =
