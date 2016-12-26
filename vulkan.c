@@ -28,7 +28,7 @@ static void check_err(char *name, VkResult err)
 {
 	char *msg;
 
-	if (err == VK_SUCCESS)
+	if (err == VK_SUCCESS || err == VK_INCOMPLETE)
 		return;
 
 	switch (err) {
