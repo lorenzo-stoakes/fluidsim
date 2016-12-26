@@ -707,6 +707,18 @@ static void setup_render_pass(struct vulkan_device *device)
 		vkCreateRenderPass(device->logical, &info, NULL, &device->render_pass));
 }
 
+/* Setup pipeline cache. */
+static void setup_pipeline_cache(struct vulkan_device *device)
+{
+	VkPipelineCacheCreateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO
+	};
+
+	check_err("vkCreatePipelineCache",
+		vkCreatePipelineCache(device->logical, &info, NULL,
+				&device->pipeline_cache));
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
@@ -734,6 +746,7 @@ static void setup_device(struct vulkan *vulkan)
 	create_command_buffers(device);
 	setup_depth_stencil(vulkan->win, device);
 	setup_render_pass(device);
+	setup_pipeline_cache(device);
 }
 
 /* Set up vulkan using the specified window. */
@@ -766,6 +779,8 @@ void vulkan_destroy(struct vulkan *vulkan)
 	destroy_depth_stencil(device);
 
 	vkDestroyRenderPass(device->logical, device->render_pass, NULL);
+	vkDestroyPipelineCache(device->logical, device->pipeline_cache, NULL);
+
 	if (device->command_pool)
 		vkDestroyCommandPool(device->logical,
 				device->command_pool, NULL);

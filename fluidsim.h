@@ -92,6 +92,8 @@ struct vulkan_device {
 	struct depth_stencil depth_stencil;
 
 	VkRenderPass render_pass;
+
+	VkPipelineCache pipeline_cache;
 };
 
 struct vulkan {
