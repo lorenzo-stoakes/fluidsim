@@ -66,7 +66,6 @@ struct vulkan_device {
 	VkExtensionProperties *extension_properties;
 
 	VkQueue queue;
-	VkFormat format;
 	VkCommandPool command_pool;
 	VkCommandBuffer setup_command_buffer, *draw_command_buffers;
 
@@ -82,6 +81,8 @@ struct vulkan_device {
 	uint32_t image_count;
 	VkImage *images;
 	VkImageView *views;
+
+	VkFormat depth_format;
 };
 
 struct vulkan {

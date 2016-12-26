@@ -144,9 +144,9 @@ static void get_depth_format(struct vulkan_device *device)
 	FOR_EACH(i, depths_by_preference) {
 		VkFormatProperties properties;
 
-		device->format = depths_by_preference[i];
+		device->depth_format = depths_by_preference[i];
 		vkGetPhysicalDeviceFormatProperties(device->physical,
-						device->format, &properties);
+						device->depth_format, &properties);
 
 		if (properties.optimalTilingFeatures &
 			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
