@@ -497,21 +497,16 @@ static void get_extension_properties(struct vulkan_device *device)
 			NULL, &count, device->extension_properties));
 }
 
-/* Populate device details contained within vulkan struct and setup device. */
-static void setup_device(struct vulkan *vulkan)
+/* Sets up and creates logical device with queue. */
+static void setup_logical_device(struct vulkan_device *device)
 {
-	struct vulkan_device *device = &vulkan->device;
 	VkDeviceCreateInfo create_info = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		/* TODO: Default to not enabling any features, later enable? */
 		.pEnabledFeatures = NULL
 	};
 
-	setup_phys_device(vulkan->instance, device);
-	populate_queues(device);
 	device->queue_create_infos = populate_queue_info(device, &create_info);
-
-	get_extension_properties(device);
 
 	check_err("vkCreateDevice",
 		vkCreateDevice(device->physical, &create_info, NULL,
@@ -520,9 +515,18 @@ static void setup_device(struct vulkan *vulkan)
 	vkGetDeviceQueue(device->logical,
 			device->queue_index_by_flag[VK_QUEUE_GRAPHICS_BIT], 0,
 			&device->queue);
+}
 
+/* Populate device details contained within vulkan struct and setup device. */
+static void setup_device(struct vulkan *vulkan)
+{
+	struct vulkan_device *device = &vulkan->device;
+
+	setup_phys_device(vulkan->instance, device);
+	populate_queues(device);
+	get_extension_properties(device);
+	setup_logical_device(device);
 	get_depth_format(device);
-
 	create_command_pool(device);
 	create_start_setup_command_buffer(device);
 	setup_swapchain(vulkan);
