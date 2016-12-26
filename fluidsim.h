@@ -59,6 +59,8 @@ struct vulkan_device {
 
 	uint32_t extension_property_count;
 	VkExtensionProperties *extension_properties;
+
+	VkQueue queue;
 };
 
 struct vulkan {

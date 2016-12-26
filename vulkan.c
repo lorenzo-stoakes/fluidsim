@@ -177,6 +177,10 @@ static void populate_device(struct vulkan *vulkan)
 	check_err("vkCreateDevice",
 		vkCreateDevice(device->physical, &create_info, NULL,
 			&device->logical));
+
+	vkGetDeviceQueue(device->logical,
+			device->queue_index_by_flag[VK_QUEUE_GRAPHICS_BIT], 0,
+			&device->queue);
 }
 
 /* Set up vulkan using the specified window. */
