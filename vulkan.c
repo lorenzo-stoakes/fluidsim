@@ -265,6 +265,10 @@ void vulkan_destroy(struct vulkan *vulkan)
 	if (vulkan == NULL)
 		return;
 
+	if (vulkan->device.command_pool)
+		vkDestroyCommandPool(vulkan->device.logical,
+				vulkan->device.command_pool, NULL);
+
 	if (vulkan->device.logical)
 		vkDestroyDevice(vulkan->device.logical, NULL);
 
