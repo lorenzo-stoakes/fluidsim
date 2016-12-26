@@ -477,19 +477,10 @@ static void setup_phys_device(VkInstance instance, struct vulkan_device *device)
 		&count, device->queue_family_properties);
 }
 
-/* Populate device details contained within vulkan struct and setup device. */
-static void setup_device(struct vulkan *vulkan)
+/* Retrieve extension properties. */
+static void get_extension_properties(struct vulkan_device *device)
 {
 	uint32_t count;
-	struct vulkan_device *device = &vulkan->device;
-	VkDeviceCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		/* TODO: Default to not enabling any features, later enable? */
-		.pEnabledFeatures = NULL
-	};
-
-	setup_phys_device(vulkan->instance, device);
-	populate_queues(device);
 
 	check_err("vkEnumerateDeviceExtensionProperties (count)",
 		vkEnumerateDeviceExtensionProperties(device->physical,
@@ -500,9 +491,24 @@ static void setup_device(struct vulkan *vulkan)
 	check_err("vkEnumerateDeviceExtensionProperties (enumerate)",
 		vkEnumerateDeviceExtensionProperties(device->physical,
 			NULL, &count, device->extension_properties));
+}
 
+/* Populate device details contained within vulkan struct and setup device. */
+static void setup_device(struct vulkan *vulkan)
+{
+	struct vulkan_device *device = &vulkan->device;
+	VkDeviceCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		/* TODO: Default to not enabling any features, later enable? */
+		.pEnabledFeatures = NULL
+	};
+
+	setup_phys_device(vulkan->instance, device);
+	populate_queues(device);
 	device->queue_create_infos =
 		populate_device_queue_info(device, &create_info);
+
+	get_extension_properties(device);
 
 	check_err("vkCreateDevice",
 		vkCreateDevice(device->physical, &create_info, NULL,
