@@ -191,8 +191,8 @@ static void start_command_buffer(struct vulkan_device *device)
 		vkBeginCommandBuffer(device->command_buffer, &info));
 }
 
-/* Populate device details contained within vulkan struct. */
-static void populate_device(struct vulkan *vulkan)
+/* Populate device details contained within vulkan struct and setup device. */
+static void setup_device(struct vulkan *vulkan)
 {
 	uint32_t gpu_count = 0;
 	uint32_t count;
@@ -285,7 +285,7 @@ struct vulkan *vulkan_make(struct window *win)
 	check_err("vkCreateInstance",
 		vkCreateInstance(&instance_create_info, NULL, &ret->instance));
 
-	populate_device(ret);
+	setup_device(ret);
 
 	return ret;
 }
