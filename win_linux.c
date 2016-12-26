@@ -105,6 +105,8 @@ struct window *win_make(char *title, uint16_t width, uint16_t height)
 	ret->conn = conn;
 	ret->win = win;
 	ret->event_delete_win = atom_delete_win;
+	ret->width = width;
+	ret->height = height;
 
 	win_update(ret);
 

@@ -36,6 +36,8 @@ struct window {
 	xcb_connection_t *conn;
 	xcb_window_t win;
 	xcb_atom_t event_delete_win;
+
+	uint16_t width, height;
 };
 #else
 #error Only linux supported.
