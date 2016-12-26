@@ -175,9 +175,6 @@ static void setup_semaphores(struct vulkan_device *device)
 	check_err("vkCreateSemaphore (render complete)",
 		vkCreateSemaphore(device->logical, &info, NULL,
 				&device->render_complete));
-	check_err("vkCreateSemaphore (text overlay complete)",
-		vkCreateSemaphore(device->logical, &info, NULL,
-				&device->text_overlay_complete));
 
 	submit_info->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submit_info->pWaitDstStageMask = &device->gfx_pipeline_stage_wait;
@@ -198,7 +195,6 @@ static void destroy_semaphores(struct vulkan_device *device)
 
 	vkDestroySemaphore(device->logical, device->present_complete, NULL);
 	vkDestroySemaphore(device->logical, device->render_complete, NULL);
-	vkDestroySemaphore(device->logical, device->text_overlay_complete, NULL);
 }
 
 /* Create device command pool. */
