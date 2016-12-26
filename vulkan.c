@@ -205,6 +205,35 @@ static void create_start_setup_command_buffer(struct vulkan_device *device)
 		vkBeginCommandBuffer(device->setup_command_buffer, &info));
 }
 
+/* Create draw command buffers. */
+static void create_command_buffers(struct vulkan_device *device)
+{
+	VkCommandBufferAllocateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = device->command_pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = device->image_count
+	};
+
+	device->draw_command_buffers =
+		must_realloc(device->draw_command_buffers,
+			sizeof(VkCommandBuffer) * device->image_count);
+	check_err("vkAllocateCommandBuffers",
+		vkAllocateCommandBuffers(device->logical, &info,
+					device->draw_command_buffers));
+}
+
+/* Clean up draw command buffers if they exist. */
+static void destroy_command_buffers(struct vulkan_device *device)
+{
+	if (!device->draw_command_buffers)
+		return;
+
+	vkFreeCommandBuffers(device->logical, device->command_pool,
+			device->image_count, device->draw_command_buffers);
+	free(device->draw_command_buffers);
+}
+
 /* Populate device details contained within vulkan struct and setup device. */
 static void setup_device(struct vulkan *vulkan)
 {
@@ -511,6 +540,7 @@ struct vulkan *vulkan_make(struct window *win)
 
 	setup_device(ret);
 	setup_swapchain(ret);
+	create_command_buffers(&ret->device);
 
 	return ret;
 }
@@ -528,6 +558,7 @@ void vulkan_destroy(struct vulkan *vulkan)
 	if (device->surface)
 		vkDestroySurfaceKHR(vulkan->instance, device->surface, NULL);
 
+	destroy_command_buffers(device);
 	destroy_setup_command_buffer(device);
 
 	if (device->command_pool)
