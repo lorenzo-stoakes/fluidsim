@@ -769,14 +769,12 @@ void vulkan_destroy(struct vulkan *vulkan)
 		vkDestroyCommandPool(device->logical,
 				device->command_pool, NULL);
 
-	if (device->logical)
-		vkDestroyDevice(device->logical, NULL);
-
 	free(device->queue_family_properties);
 	free(device->extension_properties);
 	free(device->queue_create_infos);
 	free((char *)vulkan->app_info.pApplicationName);
 
+	vkDestroyDevice(device->logical, NULL);
 	vkDestroyInstance(vulkan->instance, NULL);
 
 	free(vulkan);
