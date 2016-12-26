@@ -50,6 +50,9 @@ static void check_err(char *name, VkResult err)
 	case VK_ERROR_INCOMPATIBLE_DRIVER:
 		msg = "incompatible driver";
 		break;
+	case VK_ERROR_SURFACE_LOST_KHR:
+		msg = "surface lost";
+		break;
 	default:
 		msg = "unknown error";
 		break;
