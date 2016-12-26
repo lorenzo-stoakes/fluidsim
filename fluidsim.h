@@ -22,7 +22,7 @@
 #define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
 
 /* Iterate through a static array. */
-#define FOR_EACH(__i, __arr) for (__i = 0; i < ARRAY_SIZE(__arr); i++)
+#define FOR_EACH(__i, __arr) for (__i = 0; __i < ARRAY_SIZE(__arr); __i++)
 
 /* The vulkan queues we care about. */
 #define QUEUE_MASK (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | \
