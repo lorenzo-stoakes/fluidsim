@@ -104,12 +104,9 @@ static void populate_queues(struct vulkan_device *device)
 	}
 }
 
-/*
- * Populate pQueueCreateInfos field in specified VkDeviceCreateInfo
- * structure.
- */
-static VkDeviceQueueCreateInfo *populate_device_queue_info(
-	struct vulkan_device *device, VkDeviceCreateInfo *create_info)
+/* Populate pQueueCreateInfos field in VkDeviceCreateInfo structure. */
+static VkDeviceQueueCreateInfo *populate_queue_info(struct vulkan_device *device,
+						VkDeviceCreateInfo *create_info)
 {
 	uint32_t i, count = device->queue_family_property_count;
 	VkDeviceQueueCreateInfo *queue_create_infos =
@@ -512,8 +509,7 @@ static void setup_device(struct vulkan *vulkan)
 
 	setup_phys_device(vulkan->instance, device);
 	populate_queues(device);
-	device->queue_create_infos =
-		populate_device_queue_info(device, &create_info);
+	device->queue_create_infos = populate_queue_info(device, &create_info);
 
 	get_extension_properties(device);
 
