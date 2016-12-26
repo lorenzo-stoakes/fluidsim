@@ -786,6 +786,7 @@ static void setup_frame_buffers(struct window *win, struct vulkan_device *device
 	}
 }
 
+/* Cleanup frame buffers. */
 static void destroy_frame_buffers(struct vulkan_device *device)
 {
 	uint32_t i;
