@@ -99,6 +99,8 @@ struct vulkan_device {
 	VkRenderPass render_pass;
 
 	VkPipelineCache pipeline_cache;
+
+	VkFramebuffer *frame_buffers;
 };
 
 struct vulkan {

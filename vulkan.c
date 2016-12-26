@@ -759,6 +759,44 @@ static void setup_pipeline_cache(struct vulkan_device *device)
 				&device->pipeline_cache));
 }
 
+/* Setup frame buffers for each swap chain image. */
+static void setup_frame_buffers(struct window *win, struct vulkan_device *device)
+{
+	uint32_t i;
+	VkImageView attachments[2];
+	VkFramebufferCreateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.renderPass = device->render_pass,
+		.attachmentCount = 2,
+		.pAttachments = attachments,
+		.width = win->width,
+		.height = win->height
+	};
+
+	device->frame_buffers = must_realloc(device->frame_buffers,
+		sizeof(VkFramebuffer) * device->image_count);
+
+	/* Always include depth stencil. */
+	attachments[1] = device->depth_stencil.view;
+	for (i = 0; i < device->image_count; i++) {
+		attachments[0] = device->views[i];
+		check_err("vkCreateFramebuffer",
+			vkCreateFramebuffer(device->logical, &info, NULL,
+					&device->frame_buffers[i]));
+	}
+}
+
+static void destroy_frame_buffers(struct vulkan_device *device)
+{
+	uint32_t i;
+
+	for (i = 0; i < device->image_count; i++)
+		vkDestroyFramebuffer(device->logical, device->frame_buffers[i],
+				NULL);
+
+	free(device->frame_buffers);
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
@@ -792,6 +830,7 @@ static void setup_device(struct vulkan *vulkan)
 	setup_depth_stencil(vulkan->win, device);
 	setup_render_pass(device);
 	setup_pipeline_cache(device);
+	setup_frame_buffers(vulkan->win, device);
 }
 
 /* Set up vulkan using the specified window. */
@@ -823,6 +862,7 @@ void vulkan_destroy(struct vulkan *vulkan)
 	destroy_setup_command_buffer(device);
 	destroy_depth_stencil(device);
 	destroy_semaphores(device);
+	destroy_frame_buffers(device);
 
 	vkDestroyRenderPass(device->logical, device->render_pass, NULL);
 	vkDestroyPipelineCache(device->logical, device->pipeline_cache, NULL);
