@@ -1228,6 +1228,11 @@ static void destroy_layout(struct layout *layout)
 
 	vkDestroyBuffer(device->logical, layout->uniform_data.buf, NULL);
 	vkFreeMemory(device->logical, layout->uniform_data.mem, NULL);
+
+	vkDestroyPipelineLayout(device->logical,
+				layout->pipeline_layout, NULL);
+	vkDestroyDescriptorSetLayout(device->logical,
+				layout->descriptor_set_layout, NULL);
 }
 
 /* Setup our swapchain. */
