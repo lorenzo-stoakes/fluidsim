@@ -1146,6 +1146,8 @@ static void setup_layout(struct vulkan *vulkan)
 {
 	struct layout *layout = &vulkan->layout;
 
+	layout->zoom = DEFAULT_ZOOM;
+
 	setup_vertex_buffer(layout);
 	setup_index_buffer(layout);
 	submit_staging(layout);

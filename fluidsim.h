@@ -46,6 +46,8 @@
 #define SEC_NANO (1000000000UL)
 /* How long we'll wait for a fence to timeout. */
 #define FENCE_TIMEOUT (1UL * SEC_NANO)
+/* Default zoom level. */
+#define DEFAULT_ZOOM -2.5f
 
 #ifdef __linux__
 #include <xcb/xcb.h>
@@ -114,6 +116,8 @@ struct layout {
 	struct indices indices;
 
 	struct uniform_data uniform_data;
+
+	float zoom, rot_x, rot_y, rot_z;
 };
 
 struct vulkan_device {
