@@ -1094,6 +1094,47 @@ static void submit_staging(struct layout *layout)
 	destroy_staging_layout(layout);
 }
 
+/* Setup uniform buffers. */
+static void setup_uniform_buffers(struct layout *layout)
+{
+	VkMemoryRequirements mem_reqs;
+	struct vulkan_device *device = layout_device(layout);
+	struct uniform_data *uniform_data = &layout->uniform_data;
+	VkBufferCreateInfo buffer_info = {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = sizeof(struct uniform_buffer_object),
+		.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+	};
+	VkMemoryAllocateInfo alloc_info = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO
+	};
+
+	check_err("vkCreateBuffer",
+		vkCreateBuffer(device->logical, &buffer_info, NULL,
+			&uniform_data->buf));
+	vkGetBufferMemoryRequirements(device->logical, uniform_data->buf,
+				&mem_reqs);
+	alloc_info.allocationSize = mem_reqs.size;
+	/*
+	 * We want something host-visible and instantly visible to the device
+	 * (coherent.)
+	 */
+	alloc_info.memoryTypeIndex = get_memory_type_index(device,
+		mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	check_err("vkAllocateMemory",
+		vkAllocateMemory(device->logical, &alloc_info, NULL,
+				&uniform_data->mem));
+	check_err("vkBindBufferMemory",
+		vkBindBufferMemory(device->logical, uniform_data->buf,
+				uniform_data->mem, 0));
+
+	/* Setup descriptor. */
+	uniform_data->descriptor.buffer = uniform_data->buf;
+	uniform_data->descriptor.offset = 0;
+	uniform_data->descriptor.range = sizeof(struct uniform_buffer_object);
+}
+
 /* Setup scene layout data. */
 static void setup_layout(struct vulkan *vulkan)
 {
@@ -1102,6 +1143,7 @@ static void setup_layout(struct vulkan *vulkan)
 	setup_vertex_buffer(layout);
 	setup_index_buffer(layout);
 	submit_staging(layout);
+	setup_uniform_buffers(layout);
 }
 
 /* Cleanup scene layout data. */
@@ -1114,6 +1156,9 @@ static void destroy_layout(struct layout *layout)
 
 	vkDestroyBuffer(device->logical, layout->indices.buf, NULL);
 	vkFreeMemory(device->logical, layout->indices.mem, NULL);
+
+	vkDestroyBuffer(device->logical, layout->uniform_data.buf, NULL);
+	vkFreeMemory(device->logical, layout->uniform_data.mem, NULL);
 }
 
 /* Setup our swapchain. */

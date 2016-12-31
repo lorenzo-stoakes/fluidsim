@@ -65,6 +65,16 @@ struct mat4 {
 	float m[16];
 };
 
+struct uniform_buffer_object {
+	struct mat4 projection, model, view;
+};
+
+struct uniform_data {
+	VkDeviceMemory mem;
+	VkBuffer buf;
+	VkDescriptorBufferInfo descriptor;
+};
+
 struct depth_stencil {
 	VkImage image;
 	VkDeviceMemory mem;
@@ -102,6 +112,8 @@ struct indices {
 struct layout {
 	struct vertices vertices;
 	struct indices indices;
+
+	struct uniform_data uniform_data;
 };
 
 struct vulkan_device {
