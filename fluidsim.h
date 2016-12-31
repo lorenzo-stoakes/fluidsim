@@ -30,6 +30,13 @@
 /* Free pointer, then set to NULL. */
 #define FREE_CLEAR(__ptr) do { free(__ptr); __ptr = NULL; } while(0)
 
+/* Dodgy implementation of the kernel equivalents. */
+#ifndef offsetof
+#define offsetof(__type, __fieldname) ((size_t)(&((__type *)0)->__fieldname))
+#endif
+#define container_of(__ptr, __type, __fieldname) \
+	((__type *)((unsigned char *)__ptr - offsetof(__type, __fieldname)))
+
 /* The vulkan queues we care about. */
 #define QUEUE_MASK (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | \
 	VK_QUEUE_TRANSFER_BIT)
