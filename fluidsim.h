@@ -225,6 +225,7 @@ static inline void *must_realloc(void *arr, size_t size)
 
 /* helpers.c */
 float deg_to_rad(float deg);
+unsigned char *read_file(char *path, size_t *psize);
 
 /* linear.c */
 extern struct mat4 linear_identity;
