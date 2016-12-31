@@ -42,6 +42,10 @@
 	VK_QUEUE_TRANSFER_BIT)
 /* Size guaranteed to contain all queue bits masked by QUEUE_MASK. */
 #define QUEUE_MAX (QUEUE_MASK + 1)
+/* Number of nanoseconds in a second. */
+#define SEC_NANO (1000000000UL)
+/* How long we'll wait for a fence to timeout. */
+#define FENCE_TIMEOUT (1UL * SEC_NANO)
 
 #ifdef __linux__
 #include <xcb/xcb.h>
@@ -60,6 +64,39 @@ struct depth_stencil {
 	VkImage image;
 	VkDeviceMemory mem;
 	VkImageView view;
+};
+
+struct vertex {
+	float pos[3];
+	float colour[3];
+};
+
+struct staging_buffer {
+	VkDeviceMemory mem;
+	VkBuffer buf;
+};
+
+struct vertices {
+	size_t size;
+
+	VkDeviceMemory mem;
+	VkBuffer buf;
+
+	struct staging_buffer staging;
+};
+
+struct indices {
+	size_t size;
+
+	struct staging_buffer staging;
+
+	VkDeviceMemory mem;
+	VkBuffer buf;
+};
+
+struct layout {
+	struct vertices vertices;
+	struct indices indices;
 };
 
 struct vulkan_device {
@@ -121,6 +158,8 @@ struct vulkan {
 
 	VkApplicationInfo app_info;
 	VkInstance instance;
+
+	struct layout layout;
 };
 
 enum fluidsim_event {

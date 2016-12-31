@@ -1,5 +1,13 @@
 #include "fluidsim.h"
 
+/* Helper function to retrieve the device associated with a layout. */
+static inline struct vulkan_device *layout_device(struct layout *ptr)
+{
+	struct vulkan *vulkan = container_of(ptr, struct vulkan, layout);
+
+	return &vulkan->device;
+}
+
 /* Extensions we want to enable. */
 static const char *const extensions[] = {
 	VK_KHR_SURFACE_EXTENSION_NAME,
@@ -847,6 +855,265 @@ static void flush_setup_command_buffer(struct vulkan_device *device)
 	device->setup_command_buffer = VK_NULL_HANDLE;
 }
 
+/* Setup vertex buffer. */
+static void setup_vertex_buffer(struct layout *layout)
+{
+	VkMemoryRequirements mem_reqs;
+	void *ptr;
+	struct vulkan_device *device = layout_device(layout);
+	struct vertex local_vertex_buf[3] = {
+		{  .pos = { 1.0f, 1.0f, 0.0f }, .colour = { 1.0f, 0.0f, 0.0f } },
+		{  .pos = {-1.0f, 1.0f, 0.0f }, .colour = { 0.0f, 1.0f, 0.0f } },
+		{  .pos = { 0.0f,-1.0f, 0.0f }, .colour = { 0.0f, 0.0f, 1.0f } },
+	};
+	struct vertices *vertices = &layout->vertices;
+	size_t vertex_size = sizeof(local_vertex_buf);
+	VkBufferCreateInfo src_info = {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		.size = vertex_size
+	}, dst_info = {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		.size = vertex_size
+	};
+	VkMemoryAllocateInfo src_alloc_info = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO
+	}, dst_alloc_info = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO
+	};
+
+	vertices->size = vertex_size;
+
+	check_err("vkCreateBuffer (vertex source)",
+		vkCreateBuffer(device->logical, &src_info, NULL,
+			&vertices->staging.buf));
+
+	vkGetBufferMemoryRequirements(device->logical, vertices->staging.buf,
+				&mem_reqs);
+	src_alloc_info.allocationSize = mem_reqs.size;
+	/*
+	 * Need it to be host visible so we can copy into it, also make
+	 * coherent so device sees immediately.
+	 */
+	src_alloc_info.memoryTypeIndex = get_memory_type_index(device,
+		mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	check_err("vkAllocateMemory (vertex source)",
+		vkAllocateMemory(device->logical, &src_alloc_info, NULL,
+				&vertices->staging.mem));
+	/* Map, copy in vertex data, unmap. */
+	check_err("vkMapMemory (vertex source)",
+		vkMapMemory(device->logical, vertices->staging.mem, 0,
+			src_alloc_info.allocationSize, 0, &ptr));
+	memcpy(ptr, local_vertex_buf, vertex_size);
+	vkUnmapMemory(device->logical, vertices->staging.mem);
+	/* Bind the buffer and memory. */
+	check_err("vkBindBufferMemory (vertex source)",
+		vkBindBufferMemory(device->logical, vertices->staging.buf,
+				vertices->staging.mem, 0));
+
+	/* Create target buffer. */
+	check_err("vkCreateBuffer (vertex target)",
+		vkCreateBuffer(device->logical, &dst_info, NULL,
+			&vertices->buf));
+	vkGetBufferMemoryRequirements(device->logical, vertices->buf,
+				&mem_reqs);
+	dst_alloc_info.allocationSize = mem_reqs.size;
+	dst_alloc_info.memoryTypeIndex = get_memory_type_index(device,
+		mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	check_err("vkAllocateMemory (vertex target)",
+		vkAllocateMemory(device->logical, &dst_alloc_info, NULL,
+				&vertices->mem));
+	check_err("vkBindBufferMemory (vertex target)",
+		vkBindBufferMemory(device->logical, vertices->buf,
+				vertices->mem, 0));
+}
+
+/* Setup index buffer. */
+static void setup_index_buffer(struct layout *layout)
+{
+	VkMemoryRequirements mem_reqs;
+	void *ptr;
+	struct vulkan_device *device = layout_device(layout);
+	uint32_t local_index_buf[3] = { 0, 1, 2 };
+	struct indices *indices = &layout->indices;
+	size_t index_size = sizeof(local_index_buf);
+	VkBufferCreateInfo src_info = {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		.size = index_size
+	}, dst_info = {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		.size = index_size
+	};
+	VkMemoryAllocateInfo src_alloc_info = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO
+	}, dst_alloc_info = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO
+	};
+
+	indices->size = index_size;
+
+	/* Create index buffer. */
+	check_err("vkCreateBuffer (index source)",
+		vkCreateBuffer(device->logical, &src_info, NULL,
+			&indices->staging.buf));
+	vkGetBufferMemoryRequirements(device->logical, indices->staging.buf,
+				&mem_reqs);
+	src_alloc_info.allocationSize = mem_reqs.size;
+	src_alloc_info.memoryTypeIndex = get_memory_type_index(device,
+		mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	check_err("vkAllocateMemory (index source)",
+		vkAllocateMemory(device->logical, &src_alloc_info, NULL,
+				&indices->staging.mem));
+	/* Map, copy in index data, unmap. */
+	check_err("vkMapMemory (index source)",
+		vkMapMemory(device->logical, indices->staging.mem, 0,
+			index_size, 0, &ptr));
+	memcpy(ptr, local_index_buf, index_size);
+	vkUnmapMemory(device->logical, indices->staging.mem);
+	/* Bind the buffer and memory. */
+	check_err("vkBindBufferMemory (index source)",
+		vkBindBufferMemory(device->logical, indices->staging.buf,
+				indices->staging.mem, 0));
+
+	/* Create target buffer. */
+	check_err("vkCreateBuffer (index target)",
+		vkCreateBuffer(device->logical, &dst_info, NULL, &indices->buf));
+	vkGetBufferMemoryRequirements(device->logical, indices->buf, &mem_reqs);
+	dst_alloc_info.allocationSize = mem_reqs.size;
+	dst_alloc_info.memoryTypeIndex = get_memory_type_index(device,
+		mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	check_err("vkAllocateMemory (index target)",
+		vkAllocateMemory(device->logical, &dst_alloc_info, NULL,
+				&indices->mem));
+	check_err("vkBindBufferMemory (index target)",
+		vkBindBufferMemory(device->logical, indices->buf, indices->mem, 0));
+}
+
+/* Cleanup staging layout data. */
+static void destroy_staging_layout(struct layout *layout)
+{
+	struct vulkan_device *device = layout_device(layout);
+
+	vkDestroyBuffer(device->logical, layout->vertices.staging.buf, NULL);
+	vkFreeMemory(device->logical, layout->vertices.staging.mem, NULL);
+
+	vkDestroyBuffer(device->logical, layout->indices.staging.buf, NULL);
+	vkFreeMemory(device->logical, layout->indices.staging.mem, NULL);
+}
+
+/* Allocate a command buffer */
+static VkCommandBuffer alloc_command_buffer(struct vulkan_device *device)
+{
+	VkCommandBuffer ret;
+	VkCommandBufferAllocateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = device->command_pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1
+	};
+
+	check_err("vkAllocateCommandBuffers",
+		vkAllocateCommandBuffers(device->logical, &info, &ret));
+
+	return ret;
+}
+
+/* Wrapper around vkBeginCommandBuffer. */
+static void begin_command_buffer(VkCommandBuffer buf)
+{
+	VkCommandBufferBeginInfo info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO
+	};
+
+	check_err("vkBeginCommandBuffer",
+		vkBeginCommandBuffer(buf, &info));
+}
+
+/* Terminate recording of command buffer and submit to queue. */
+static void flush_command_buffer(struct vulkan_device *device,
+				VkCommandBuffer buf)
+{
+	VkFence fence; /* So we know command buffer has finished. */
+	VkSubmitInfo submit_info = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &buf
+	};
+	VkFenceCreateInfo fence_info = {
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO
+	};
+
+	if (buf == VK_NULL_HANDLE)
+		fatal("NULL command buffer.");
+
+	check_err("vkEndCommandBuffer", vkEndCommandBuffer(buf));
+
+	check_err("vkCreateFence",
+		vkCreateFence(device->logical, &fence_info, NULL, &fence));
+
+	check_err("vkQueueSubmit",
+		vkQueueSubmit(device->queue, 1, &submit_info, fence));
+	/* Now wait for fence... */
+	check_err("vkWaitForFences",
+		vkWaitForFences(device->logical, 1, &fence, VK_TRUE,
+				FENCE_TIMEOUT));
+
+	vkDestroyFence(device->logical, fence, NULL);
+	vkFreeCommandBuffers(device->logical, device->command_pool, 1, &buf);
+}
+
+/* Submit staging buffers. */
+static void submit_staging(struct layout *layout)
+{
+	struct vulkan_device *device = layout_device(layout);
+	struct vertices *vertices = &layout->vertices;
+	struct indices *indices = &layout->indices;
+	VkCommandBuffer copy_cmd = alloc_command_buffer(device);
+	VkBufferCopy vertex_copy_region = {
+		.size = vertices->size
+	}, index_copy_region = {
+		.size = indices->size
+	};
+
+	begin_command_buffer(copy_cmd);
+
+	vkCmdCopyBuffer(copy_cmd, vertices->staging.buf, vertices->buf, 1,
+			&vertex_copy_region);
+	vkCmdCopyBuffer(copy_cmd, indices->staging.buf, indices->buf, 1,
+			&index_copy_region);
+
+	flush_command_buffer(device, copy_cmd);
+
+	destroy_staging_layout(layout);
+}
+
+/* Setup scene layout data. */
+static void setup_layout(struct layout *layout)
+{
+	setup_vertex_buffer(layout);
+	setup_index_buffer(layout);
+	submit_staging(layout);
+}
+
+/* Cleanup scene layout data. */
+static void destroy_layout(struct layout *layout)
+{
+	struct vulkan_device *device = layout_device(layout);
+
+	vkDestroyBuffer(device->logical, layout->vertices.buf, NULL);
+	vkFreeMemory(device->logical, layout->vertices.mem, NULL);
+
+	vkDestroyBuffer(device->logical, layout->indices.buf, NULL);
+	vkFreeMemory(device->logical, layout->indices.mem, NULL);
+}
+
 /* Setup our swapchain. */
 static void setup_swapchain(struct vulkan *vulkan)
 {
@@ -895,6 +1162,7 @@ struct vulkan *vulkan_make(struct window *win)
 	ret->win = win;
 	create_instance(ret);
 	setup_device(ret);
+	setup_layout(&ret->layout);
 
 	return ret;
 }
@@ -908,6 +1176,8 @@ void vulkan_destroy(struct vulkan *vulkan)
 		return;
 
 	device = &vulkan->device;
+
+	destroy_layout(&vulkan->layout);
 
 	destroy_swapchain(device);
 
