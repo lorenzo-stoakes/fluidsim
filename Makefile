@@ -1,7 +1,7 @@
 # TODO: Abstract out linux-specific options.
 
 override CFLAGS += -D_GNU_SOURCE -DVK_USE_PLATFORM_XCB_KHR -g -Wall -Werror -Wextra -Wpacked -Wshadow -std=gnu11
-LIBFLAGS = -lxcb -lvulkan
+LIBFLAGS = -lxcb -lvulkan -lm
 
 # Ensure we pick up changes for all relevant files...
 CODE_FILES=$(wildcard *.c *.h Makefile)

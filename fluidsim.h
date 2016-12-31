@@ -60,6 +60,11 @@ struct window {
 #error Only linux supported.
 #endif
 
+/* Attempt to replicate mat4 from GLM. */
+struct mat4 {
+	float m[16];
+};
+
 struct depth_stencil {
 	VkImage image;
 	VkDeviceMemory mem;
@@ -202,6 +207,15 @@ static inline void *must_realloc(void *arr, size_t size)
 struct dyn_arr *dyn_make(void);
 void dyn_push(struct dyn_arr *arr, dyn_arr_t val);
 void dyn_destroy(struct dyn_arr *arr);
+
+/* linear.c */
+extern struct mat4 linear_identity;
+struct mat4 linear_perspective(float fovy, float aspect_ratio, float near_plane,
+			float far_plane);
+void linear_translate(struct mat4 *matrix, float x, float y, float z);
+void linear_rotate_x(struct mat4 *matrix, float rads);
+void linear_rotate_y(struct mat4 *matrix, float rads);
+void linear_rotate_z(struct mat4 *matrix, float rads);
 
 /* vulkan.c */
 struct vulkan *vulkan_make(struct window *win);
