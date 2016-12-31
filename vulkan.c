@@ -1100,6 +1100,35 @@ static void submit_staging(struct layout *layout)
 	destroy_staging_layout(layout);
 }
 
+/* Update uniform buffers to reflect camera angle. */
+static void update_uniform_buffers(struct layout *layout)
+{
+	void *ptr;
+	struct vulkan *vulkan = layout_vulkan(layout);
+	struct window *win = vulkan->win;
+	struct vulkan_device *device = layout_device(layout);
+	struct uniform_buffer_object *ubo = &layout->ubo;
+	size_t buf_size = sizeof(struct uniform_buffer_object);
+
+	ubo->projection = linear_perspective(deg_to_rad(60.0f),
+		(float)win->width / (float)win->height, 0.1f, 256.0f);
+
+	ubo->model = linear_identity;
+	linear_rotate_x(&ubo->model, layout->rot_x);
+	linear_rotate_y(&ubo->model, layout->rot_y);
+	linear_rotate_z(&ubo->model, layout->rot_z);
+
+	ubo->view = linear_identity;
+	linear_translate(&ubo->view, 0.0f, 0.0f, layout->zoom);
+
+	/* Now copy to device. Coherent so should have immediate effect. */
+	check_err("vkMapMemory",
+		vkMapMemory(device->logical, layout->uniform_data.mem, 0,
+			buf_size, 0, &ptr));
+	memcpy(ptr, ubo, buf_size);
+	vkUnmapMemory(device->logical, layout->uniform_data.mem);
+}
+
 /* Setup uniform buffers. */
 static void setup_uniform_buffers(struct layout *layout)
 {
@@ -1139,6 +1168,8 @@ static void setup_uniform_buffers(struct layout *layout)
 	uniform_data->descriptor.buffer = uniform_data->buf;
 	uniform_data->descriptor.offset = 0;
 	uniform_data->descriptor.range = sizeof(struct uniform_buffer_object);
+
+	update_uniform_buffers(layout);
 }
 
 /* Setup scene layout data. */

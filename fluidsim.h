@@ -116,6 +116,7 @@ struct layout {
 	struct indices indices;
 
 	struct uniform_data uniform_data;
+	struct uniform_buffer_object ubo;
 
 	float zoom, rot_x, rot_y, rot_z;
 };
