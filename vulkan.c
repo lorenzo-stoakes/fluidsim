@@ -1095,8 +1095,10 @@ static void submit_staging(struct layout *layout)
 }
 
 /* Setup scene layout data. */
-static void setup_layout(struct layout *layout)
+static void setup_layout(struct vulkan *vulkan)
 {
+	struct layout *layout = &vulkan->layout;
+
 	setup_vertex_buffer(layout);
 	setup_index_buffer(layout);
 	submit_staging(layout);
@@ -1162,7 +1164,7 @@ struct vulkan *vulkan_make(struct window *win)
 	ret->win = win;
 	create_instance(ret);
 	setup_device(ret);
-	setup_layout(&ret->layout);
+	setup_layout(ret);
 
 	return ret;
 }
