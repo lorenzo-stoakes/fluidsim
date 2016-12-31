@@ -240,6 +240,9 @@ void linear_rotate_z(struct mat4 *matrix, float rads);
 struct vulkan *vulkan_make(struct window *win);
 void vulkan_destroy(struct vulkan *vulkan);
 
+/* vulkan_helpers.c */
+void check_err(char *name, VkResult err);
+
 /* win_<target>.c */
 void win_destroy(struct window *win);
 enum fluidsim_event win_handle_events(struct window *win);
