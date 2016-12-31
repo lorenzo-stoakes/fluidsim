@@ -207,6 +207,9 @@ static inline void *must_realloc(void *arr, size_t size)
 	return ret;
 }
 
+/* helpers.c */
+float deg_to_rad(float deg);
+
 /* linear.c */
 extern struct mat4 linear_identity;
 struct mat4 linear_perspective(float fovy, float aspect_ratio, float near_plane,
