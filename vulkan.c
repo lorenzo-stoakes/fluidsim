@@ -1,9 +1,15 @@
 #include "fluidsim.h"
 
+/* Helper function to retrieve a layout's vulkan object. */
+static inline struct vulkan *layout_vulkan(struct layout *ptr)
+{
+	return container_of(ptr, struct vulkan, layout);
+}
+
 /* Helper function to retrieve the device associated with a layout. */
 static inline struct vulkan_device *layout_device(struct layout *ptr)
 {
-	struct vulkan *vulkan = container_of(ptr, struct vulkan, layout);
+	struct vulkan *vulkan = layout_vulkan(ptr);
 
 	return &vulkan->device;
 }
