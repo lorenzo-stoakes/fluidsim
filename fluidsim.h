@@ -119,6 +119,17 @@ struct layout {
 	struct uniform_buffer_object ubo;
 
 	float zoom, rot_x, rot_y, rot_z;
+
+	/* Describes shader binding layout. */
+	VkDescriptorSetLayout descriptor_set_layout;
+	/* Describes resources bound to binding points in a shader. */
+	VkDescriptorSet descriptor_set;
+
+	/*
+	 * A pipeline layout describes the interface between shader stages
+	 * and resources.
+	 */
+	VkPipelineLayout pipeline_layout;
 };
 
 struct vulkan_device {

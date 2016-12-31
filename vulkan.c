@@ -1172,6 +1172,35 @@ static void setup_uniform_buffers(struct layout *layout)
 	update_uniform_buffers(layout);
 }
 
+/* Setup descriptor set layout. */
+static void setup_descriptor_set_layout(struct layout *layout)
+{
+	struct vulkan_device *device = layout_device(layout);
+	VkDescriptorSetLayoutBinding layout_binding = {
+		.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		.descriptorCount = 1,
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+	};
+	VkDescriptorSetLayoutCreateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.bindingCount = 1,
+		.pBindings = &layout_binding
+	};
+	VkPipelineLayoutCreateInfo pipeline_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.setLayoutCount = 1,
+		.pSetLayouts = &layout->descriptor_set_layout
+	};
+
+	check_err("vkCreateDescriptorSetLayout",
+		vkCreateDescriptorSetLayout(device->logical,
+			&info, NULL, &layout->descriptor_set_layout));
+
+	check_err("vkCreatePipelineLayout",
+		vkCreatePipelineLayout(device->logical, &pipeline_info, NULL,
+			&layout->pipeline_layout));
+}
+
 /* Setup scene layout data. */
 static void setup_layout(struct vulkan *vulkan)
 {
@@ -1183,6 +1212,7 @@ static void setup_layout(struct vulkan *vulkan)
 	setup_index_buffer(layout);
 	submit_staging(layout);
 	setup_uniform_buffers(layout);
+	setup_descriptor_set_layout(layout);
 }
 
 /* Cleanup scene layout data. */
