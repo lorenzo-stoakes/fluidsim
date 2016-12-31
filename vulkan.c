@@ -161,6 +161,35 @@ static void get_depth_format(struct vulkan_device *device)
 	fatal("Unable to find acceptable depth format :(");
 }
 
+/* Setup fence sync primitives. */
+static void setup_fences(struct vulkan_device *device)
+{
+	uint32_t i;
+	VkFenceCreateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.flags = VK_FENCE_CREATE_SIGNALED_BIT
+	};
+
+	device->fences = must_realloc(device->fences,
+				sizeof(VkFence) * device->image_count);
+
+	for (i = 0; i < device->image_count; i++)
+		check_err("vkCreateFence",
+			vkCreateFence(device->logical, &info, NULL, &device->fences[i]));
+
+}
+
+/* Clean up fence objects. */
+static void destroy_fences(struct vulkan_device *device)
+{
+	uint32_t i;
+
+	for (i = 0; i < device->image_count; i++)
+		vkDestroyFence(device->logical, device->fences[i], NULL);
+
+	free(device->fences);
+}
+
 /* Setup semaphores and submit info structure. */
 static void setup_semaphores(struct vulkan_device *device)
 {
@@ -847,6 +876,7 @@ static void setup_device(struct vulkan *vulkan)
 	create_command_pool(device);
 	create_start_setup_command_buffer(device);
 	setup_swapchain(vulkan);
+	setup_fences(device);
 	create_command_buffers(device);
 	setup_depth_stencil(vulkan->win, device);
 	setup_render_pass(device);
@@ -888,6 +918,7 @@ void vulkan_destroy(struct vulkan *vulkan)
 	destroy_setup_command_buffer(device);
 	destroy_depth_stencil(device);
 	destroy_semaphores(device);
+	destroy_fences(device);
 	destroy_frame_buffers(device);
 
 	vkDestroyRenderPass(device->logical, device->render_pass, NULL);

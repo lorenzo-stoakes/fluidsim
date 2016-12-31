@@ -97,6 +97,7 @@ struct vulkan_device {
 
 	VkSemaphore present_complete, render_complete;
 	VkSubmitInfo submit_info;
+	VkFence *fences;
 
 	VkPipelineStageFlags gfx_pipeline_stage_wait;
 
