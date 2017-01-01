@@ -209,6 +209,8 @@ struct vulkan {
 	VkInstance instance;
 
 	struct layout layout;
+
+	uint32_t frame;
 };
 
 enum fluidsim_event {

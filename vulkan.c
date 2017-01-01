@@ -1555,6 +1555,8 @@ void vulkan_render(struct vulkan *vulkan)
 	present_info.pImageIndices = &index;
 	check_err("vkQueuePresentKHR",
 		vkQueuePresentKHR(device->queue, &present_info));
+
+	vulkan->frame++;
 }
 
 /* Set up vulkan using the specified window. */
