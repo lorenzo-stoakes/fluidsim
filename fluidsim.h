@@ -190,6 +190,8 @@ struct vulkan_device {
 	VkPipelineCache pipeline_cache;
 
 	VkFramebuffer *frame_buffers;
+
+	uint32_t current_buffer_index;
 };
 
 struct vulkan {
@@ -246,6 +248,7 @@ void linear_rotate_z(struct mat4 *matrix, float rads);
 /* vulkan.c */
 void vulkan_destroy(struct vulkan *vulkan);
 struct vulkan *vulkan_make(struct window *win);
+void vulkan_render(struct vulkan *vulkan);
 
 /* vulkan_helpers.c */
 void check_err(char *name, VkResult err);

@@ -14,8 +14,8 @@ int main(void)
 			quit = true;
 			break;
 		default:
-			/* TODO: We are busy waiting... */
-			continue;
+			vulkan_render(vulkan);
+			break;
 		}
 	}
 

@@ -1449,6 +1449,14 @@ static void build_command_buffers(struct layout *layout)
 	}
 }
 
+static void swapchain_acquire_next(struct vulkan_device *device)
+{
+	check_err("vkAcquireNextImageKHR",
+		vkAcquireNextImageKHR(device->logical, device->swap_chain,
+			UINT64_MAX, device->present_complete, NULL,
+				&device->current_buffer_index));
+}
+
 /* Setup scene layout data. */
 static void setup_layout(struct vulkan *vulkan)
 {
@@ -1505,6 +1513,48 @@ static void setup_device(struct vulkan *vulkan)
 	flush_setup_command_buffer(device);
 	/* TODO: Necessary? */
 	create_start_setup_command_buffer(device);
+}
+
+/* Render things on screen! */
+void vulkan_render(struct vulkan *vulkan)
+{
+	uint32_t index;
+	struct vulkan_device *device = &vulkan->device;
+	VkPipelineStageFlags wait_stage_mask =
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	VkSubmitInfo submit_info = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pWaitDstStageMask = &wait_stage_mask,
+		.pWaitSemaphores = &device->present_complete,
+		.waitSemaphoreCount = 1,
+		.pSignalSemaphores = &device->render_complete,
+		.signalSemaphoreCount = 1,
+		.commandBufferCount = 1
+	};
+	VkPresentInfoKHR present_info = {
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.swapchainCount = 1,
+		.pSwapchains = &device->swap_chain,
+		.pWaitSemaphores = &device->render_complete,
+		.waitSemaphoreCount = 1
+	};
+
+	swapchain_acquire_next(&vulkan->device);
+
+	index = device->current_buffer_index;
+
+	submit_info.pCommandBuffers = &device->draw_command_buffers[index];
+
+	check_err("vkWaitForFences",
+		vkWaitForFences(device->logical, 1, &device->fences[index],
+				VK_TRUE, UINT64_MAX));
+	check_err("vkResetFences",
+		vkResetFences(device->logical, 1, &device->fences[index]));
+	check_err("vkQueueSubmit",
+		vkQueueSubmit(device->queue, 1, &submit_info, device->fences[index]));
+	present_info.pImageIndices = &index;
+	check_err("vkQueuePresentKHR",
+		vkQueuePresentKHR(device->queue, &present_info));
 }
 
 /* Set up vulkan using the specified window. */
