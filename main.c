@@ -7,6 +7,8 @@ int main(void)
 	struct vulkan *vulkan = vulkan_make(win);
 
 	while (!quit) {
+		win_update(win);
+
 		switch (win_handle_events(win)) {
 		case FLUIDSIM_EVENT_QUIT:
 			quit = true;
