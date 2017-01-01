@@ -1318,6 +1318,7 @@ static void destroy_shader_modules(struct layout *layout)
 	free(layout->modules);
 }
 
+/* Cleanup descriptor pool data. */
 static void destroy_descriptor_pool(struct layout *layout)
 {
 	struct vulkan_device *device = layout_device(layout);
