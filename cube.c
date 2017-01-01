@@ -2722,15 +2722,10 @@ int main(int argc, char **argv) {
 	struct demo demo;
 
 	demo_init(&demo, argc, argv);
-
 	demo_create_xcb_window(&demo);
-
 	demo_init_vk_swapchain(&demo);
-
 	demo_prepare(&demo);
-
 	demo_run_xcb(&demo);
-
 	demo_cleanup(&demo);
 
 	return validation_error;
