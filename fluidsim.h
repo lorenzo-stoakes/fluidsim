@@ -135,6 +135,8 @@ struct layout {
 
 	VkShaderModule *modules;
 	size_t module_count;
+
+	VkDescriptorPool descriptor_pool;
 };
 
 struct vulkan_device {

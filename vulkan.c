@@ -1267,6 +1267,28 @@ static void setup_pipelines(struct layout *layout)
 			&layout->pipeline));
 }
 
+/* Setup descriptor pool. */
+static void setup_descriptor_pool(struct layout *layout)
+{
+	struct vulkan_device *device = layout_device(layout);
+	VkDescriptorPoolSize type_counts[1] = {
+		{
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = 1
+		}
+	};
+	VkDescriptorPoolCreateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.poolSizeCount = 1,
+		.pPoolSizes = type_counts,
+		.maxSets = 1
+	};
+
+	check_err("vkCreateDescriptorPool",
+		vkCreateDescriptorPool(device->logical, &info, NULL,
+			&layout->descriptor_pool));
+}
+
 /* Setup scene layout data. */
 static void setup_layout(struct vulkan *vulkan)
 {
@@ -1280,6 +1302,7 @@ static void setup_layout(struct vulkan *vulkan)
 	setup_uniform_buffers(layout);
 	setup_descriptor_set_layout(layout);
 	setup_pipelines(layout);
+	setup_descriptor_pool(layout);
 }
 
 /* Clean up shader module data structures. */
@@ -1295,11 +1318,23 @@ static void destroy_shader_modules(struct layout *layout)
 	free(layout->modules);
 }
 
+static void destroy_descriptor_pool(struct layout *layout)
+{
+	struct vulkan_device *device = layout_device(layout);
+
+	if (layout->descriptor_pool == VK_NULL_HANDLE)
+		return;
+
+	vkDestroyDescriptorPool(device->logical, layout->descriptor_pool, NULL);
+
+}
+
 /* Cleanup scene layout data. */
 static void destroy_layout(struct layout *layout)
 {
 	struct vulkan_device *device = layout_device(layout);
 
+	destroy_descriptor_pool(layout);
 	destroy_shader_modules(layout);
 
 	vkDestroyPipeline(device->logical, layout->pipeline, NULL);
