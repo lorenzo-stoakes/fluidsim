@@ -242,6 +242,8 @@ void vulkan_destroy(struct vulkan *vulkan);
 
 /* vulkan_helpers.c */
 void check_err(char *name, VkResult err);
+VkPipelineShaderStageCreateInfo vulkan_load_shader(struct vulkan_device *device,
+	char *path, VkShaderStageFlagBits stage);
 
 /* win_<target>.c */
 void win_destroy(struct window *win);

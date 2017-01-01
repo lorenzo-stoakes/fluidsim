@@ -37,3 +37,31 @@ void check_err(char *name, VkResult err)
 
 	fatal("%s failed with %s (%d.)", name, msg, err);
 }
+
+/*
+ * Load shader binary from specified path (relative to binary directory) and
+ * load into shader module.
+ */
+VkPipelineShaderStageCreateInfo vulkan_load_shader(struct vulkan_device *device,
+	char *path, VkShaderStageFlagBits stage)
+{
+	VkShaderModule mod;
+	size_t size;
+	unsigned char *buf = read_file(path, &size);
+	VkPipelineShaderStageCreateInfo ret = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.stage = stage
+	};
+	VkShaderModuleCreateInfo mod_info = {
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.codeSize = size,
+		.pCode = (uint32_t *)buf
+	};
+
+	check_err("vkCreateShaderModule",
+		vkCreateShaderModule(device->logical, &mod_info, NULL, &mod));
+
+	ret.module = mod;
+
+	return ret;
+}
