@@ -1283,7 +1283,7 @@ static void setup_layout(struct vulkan *vulkan)
 }
 
 /* Clean up shader module data structures. */
-void destroy_shader_modules(struct layout *layout)
+static void destroy_shader_modules(struct layout *layout)
 {
 	uint32_t i;
 	struct vulkan_device *device = layout_device(layout);
