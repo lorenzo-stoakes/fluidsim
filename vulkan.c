@@ -1529,6 +1529,9 @@ void vulkan_destroy(struct vulkan *vulkan)
 
 	device = &vulkan->device;
 
+	/* Make sure everything is flushed ready for teardown. */
+	vkDeviceWaitIdle(device->logical);
+
 	if (device->surface)
 		vkDestroySurfaceKHR(vulkan->instance, device->surface, NULL);
 
