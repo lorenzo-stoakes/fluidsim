@@ -61,6 +61,8 @@ VkPipelineShaderStageCreateInfo vulkan_load_shader(struct vulkan_device *device,
 	check_err("vkCreateShaderModule",
 		vkCreateShaderModule(device->logical, &mod_info, NULL, &mod));
 
+	free(buf);
+
 	ret.module = mod;
 
 	return ret;
