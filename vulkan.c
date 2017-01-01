@@ -1,4 +1,4 @@
-#include "fluidsim.h"
+#include "vulkan-expers.h"
 
 /* Helper function to retrieve a layout's vulkan object. */
 static inline struct vulkan *layout_vulkan(struct layout *ptr)
@@ -558,13 +558,13 @@ static void setup_logical_device(struct vulkan_device *device)
 /* Create and setup new vulkan instance. */
 static void create_instance(struct vulkan *vulkan)
 {
-	char *name = strdup("fluidsim");
+	char *name = strdup("vulkan-expers");
 	VkApplicationInfo app_info = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = name,
-		.applicationVersion = FLUIDSIM_VER,
+		.applicationVersion = VULKAN_EXPERS_VER,
 		.pEngineName = name,
-		.engineVersion = FLUIDSIM_VER,
+		.engineVersion = VULKAN_EXPERS_VER,
 		.apiVersion = VK_API_VERSION_1_0
 	};
 	VkInstanceCreateInfo instance_create_info = {

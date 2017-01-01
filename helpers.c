@@ -3,7 +3,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "fluidsim.h"
+#include "vulkan-expers.h"
 
 /* Maximum size of stack-allocated path buffers. */
 #define PATH_BUF_SIZE 2048

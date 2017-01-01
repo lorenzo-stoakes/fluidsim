@@ -1,5 +1,5 @@
-#ifndef __fluidsim_h
-#define __fluidsim_h
+#ifndef __vulkan_expers_h
+#define __vulkan_expers_h
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -10,7 +10,7 @@
 
 #include <vulkan/vulkan.h>
 
-#define FLUIDSIM_VER 1
+#define VULKAN_EXPERS_VER 1
 
 /* Output specified error message to stderr (suffixing newline.) */
 #define err(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
@@ -213,9 +213,9 @@ struct vulkan {
 	uint32_t frame;
 };
 
-enum fluidsim_event {
-	FLUIDSIM_EVENT_NONE,
-	FLUIDSIM_EVENT_QUIT
+enum vulkan_expers_event {
+	VULKAN_EXPERS_EVENT_NONE,
+	VULKAN_EXPERS_EVENT_QUIT
 };
 
 /* malloc, or if no memory is available raise a fatal error and exit. */
@@ -266,8 +266,8 @@ VkPipelineShaderStageCreateInfo vulkan_load_shader(struct vulkan_device *device,
 
 /* win_<target>.c */
 void win_destroy(struct window *win);
-enum fluidsim_event win_handle_events(struct window *win);
+enum vulkan_expers_event win_handle_events(struct window *win);
 struct window *win_make(char *title, uint16_t width, uint16_t height);
 void win_update(struct window *win);
 
-#endif /* __fluidsim_h */
+#endif /* __vulkan_expers_h */

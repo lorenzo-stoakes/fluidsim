@@ -9,11 +9,11 @@ CODE_FILES=$(wildcard *.c *.h Makefile)
 # ...but are able to filter out ones we don't need to pass to gcc.
 FILTER_FILES=Makefile %.h $(SHADER_FILES)
 
-all: fluidsim
+all: vulkan-expers
 clean:
-	rm -f fluidsim
+	rm -f vulkan-expers
 
-fluidsim: $(CODE_FILES) $(SHADER_FILES)
+vulkan-expers: $(CODE_FILES) $(SHADER_FILES)
 	glslangValidator -V shaders/1.frag -o shaders/1.frag.spv
 	glslangValidator -V shaders/1.vert -o shaders/1.vert.spv
 	$(CC) $(CFLAGS) $(LIBFLAGS) $(filter-out $(FILTER_FILES), $^) -o $@

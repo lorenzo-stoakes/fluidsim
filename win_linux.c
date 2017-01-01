@@ -1,5 +1,5 @@
 #ifdef __linux__
-#include "fluidsim.h"
+#include "vulkan-expers.h"
 
 /* XCB keycode for the 'q' key. */
 #define KEY_Q 0x18
@@ -20,10 +20,10 @@ static xcb_atom_t get_xcb_atom(xcb_connection_t *conn, const char *name)
 }
 
 /* Poll and handle events for the specified window. */
-enum fluidsim_event win_handle_events(struct window *win)
+enum vulkan_expers_event win_handle_events(struct window *win)
 {
 	xcb_generic_event_t *event = xcb_poll_for_event(win->conn);
-	enum fluidsim_event ret = FLUIDSIM_EVENT_NONE;
+	enum vulkan_expers_event ret = VULKAN_EXPERS_EVENT_NONE;
 
 	if (event == NULL)
 		return ret;
@@ -35,7 +35,7 @@ enum fluidsim_event win_handle_events(struct window *win)
 			(xcb_key_release_event_t *)event;
 
 		if (key_event->detail == KEY_Q)
-			ret = FLUIDSIM_EVENT_QUIT;
+			ret = VULKAN_EXPERS_EVENT_QUIT;
 
 		break;
 	}
@@ -45,7 +45,7 @@ enum fluidsim_event win_handle_events(struct window *win)
 			(xcb_client_message_event_t *)event;
 
 		if (client_event->data.data32[0] == win->event_delete_win)
-			ret = FLUIDSIM_EVENT_QUIT;
+			ret = VULKAN_EXPERS_EVENT_QUIT;
 
 		break;
 	}
