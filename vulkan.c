@@ -1163,6 +1163,110 @@ static void setup_descriptor_set_layout(struct layout *layout)
 			&layout->pipeline_layout));
 }
 
+/* Setup pipelines - these describe how we are going to use the GPU. */
+static void setup_pipelines(struct layout *layout)
+{
+	uint32_t i;
+	struct vulkan_device *device = layout_device(layout);
+	/* Describes how primitives are assembled. */
+	VkPipelineInputAssemblyStateCreateInfo assembly_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+	};
+	VkPipelineRasterizationStateCreateInfo raster_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+		.polygonMode = VK_POLYGON_MODE_FILL,
+		.cullMode = VK_CULL_MODE_NONE,
+		.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+		.depthClampEnable = VK_FALSE,
+		.rasterizerDiscardEnable = VK_FALSE,
+		.depthBiasEnable = VK_FALSE,
+		.lineWidth = 1.0f
+	};
+	/*
+	 * Describes how blend factors are calculated, need 1 per colour
+	 * attachment even if blending isn't used.
+	 */
+	VkPipelineColorBlendAttachmentState blend_attach_state[1] = {
+		{
+			.colorWriteMask = 0xf,
+			.blendEnable = VK_FALSE
+		}
+	};
+	VkPipelineColorBlendStateCreateInfo blend_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		.attachmentCount = 1,
+		.pAttachments = blend_attach_state
+	};
+	/* Number of viewports/scissors used, overriden by dynamic states. */
+	VkPipelineViewportStateCreateInfo viewport_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		.viewportCount = 1,
+		.scissorCount = 1
+	};
+	/*
+	 * Dynamic states can be changed within a command buffer, we need to
+	 * specify what we want to be able to change.
+	 */
+	VkDynamicState dynamic_state_enables[2] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+	VkPipelineDynamicStateCreateInfo dynamic_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		.pDynamicStates = dynamic_state_enables,
+		.dynamicStateCount = ARRAY_SIZE(dynamic_state_enables)
+	};
+	VkStencilOpState stencil_ops = {
+		.failOp = VK_STENCIL_OP_KEEP,
+		.passOp = VK_STENCIL_OP_KEEP,
+		.compareOp = VK_COMPARE_OP_ALWAYS
+	};
+	VkPipelineDepthStencilStateCreateInfo depth_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		.depthTestEnable = VK_TRUE,
+		.depthWriteEnable = VK_TRUE,
+		.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+		.depthBoundsTestEnable = VK_FALSE,
+		.stencilTestEnable = VK_FALSE,
+		.back = stencil_ops,
+		.front = stencil_ops
+	};
+	VkPipelineMultisampleStateCreateInfo multisample_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT
+	};
+	VkPipelineShaderStageCreateInfo shader_infos[2] = {
+		vulkan_load_shader(device, "shaders/1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+		vulkan_load_shader(device, "shaders/1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
+	VkGraphicsPipelineCreateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		.layout = layout->pipeline_layout,
+		.renderPass = device->render_pass,
+		.stageCount = ARRAY_SIZE(shader_infos),
+		.pStages = shader_infos,
+		.pInputAssemblyState = &assembly_info,
+		.pRasterizationState = &raster_info,
+		.pColorBlendState = &blend_info,
+		.pMultisampleState = &multisample_info,
+		.pViewportState = &viewport_info,
+		.pDepthStencilState = &depth_info,
+		.pDynamicState = &dynamic_info
+	};
+
+	/* Store so we can clean up later. */
+	layout->module_count = ARRAY_SIZE(shader_infos);
+	layout->modules = must_malloc(sizeof(VkShaderModule) * layout->module_count);
+	for (i = 0; i < layout->module_count; i++)
+		layout->modules[i] = shader_infos[i].module;
+
+	check_err("vkCreateGraphicsPipelines",
+		vkCreateGraphicsPipelines(device->logical,
+			device->pipeline_cache, 1, &info, NULL,
+			&layout->pipeline));
+}
+
 /* Setup scene layout data. */
 static void setup_layout(struct vulkan *vulkan)
 {
@@ -1175,12 +1279,30 @@ static void setup_layout(struct vulkan *vulkan)
 	submit_staging(layout);
 	setup_uniform_buffers(layout);
 	setup_descriptor_set_layout(layout);
+	setup_pipelines(layout);
+}
+
+/* Clean up shader module data structures. */
+void destroy_shader_modules(struct layout *layout)
+{
+	uint32_t i;
+	struct vulkan_device *device = layout_device(layout);
+
+	for (i = 0; i < layout->module_count; i++) {
+		vkDestroyShaderModule(device->logical, layout->modules[i], NULL);
+	}
+
+	free(layout->modules);
 }
 
 /* Cleanup scene layout data. */
 static void destroy_layout(struct layout *layout)
 {
 	struct vulkan_device *device = layout_device(layout);
+
+	destroy_shader_modules(layout);
+
+	vkDestroyPipeline(device->logical, layout->pipeline, NULL);
 
 	vkDestroyBuffer(device->logical, layout->vertices.buf, NULL);
 	vkFreeMemory(device->logical, layout->vertices.mem, NULL);

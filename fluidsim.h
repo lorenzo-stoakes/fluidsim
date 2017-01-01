@@ -130,6 +130,11 @@ struct layout {
 	 * and resources.
 	 */
 	VkPipelineLayout pipeline_layout;
+
+	VkPipeline pipeline;
+
+	VkShaderModule *modules;
+	size_t module_count;
 };
 
 struct vulkan_device {
