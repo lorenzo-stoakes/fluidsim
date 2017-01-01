@@ -11,7 +11,7 @@
 /* Determine path relative to this binary's path. Very non-portable :) */
 static char *rel_path(char *path)
 {
-	char root_buf[PATH_BUF_SIZE], buf[PATH_BUF_SIZE];
+	char root_buf[PATH_BUF_SIZE] = {}, buf[PATH_BUF_SIZE] = {};
 
 	if (readlink("/proc/self/exe", root_buf, PATH_BUF_SIZE) == -1)
 		fatal("Unable to open /proc/self/exe: %s", strerror(errno));
