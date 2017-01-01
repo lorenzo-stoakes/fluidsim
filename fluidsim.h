@@ -103,7 +103,7 @@ struct vertices {
 };
 
 struct indices {
-	size_t size;
+	size_t size, count;
 
 	struct staging_buffer staging;
 

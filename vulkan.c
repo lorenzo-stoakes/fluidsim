@@ -925,6 +925,7 @@ static void setup_index_buffer(struct layout *layout)
 	};
 
 	indices->size = index_size;
+	indices->count = ARRAY_SIZE(local_index_buf);
 
 	/* Create index buffer. */
 	check_err("vkCreateBuffer (index source)",
