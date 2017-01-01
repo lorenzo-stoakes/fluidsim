@@ -771,7 +771,8 @@ static void setup_frame_buffers(struct window *win, struct vulkan_device *device
 		.attachmentCount = 2,
 		.pAttachments = attachments,
 		.width = win->width,
-		.height = win->height
+		.height = win->height,
+		.layers = 1
 	};
 
 	device->frame_buffers = must_realloc(device->frame_buffers,
