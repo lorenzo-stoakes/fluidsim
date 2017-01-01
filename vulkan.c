@@ -1316,22 +1316,6 @@ static void setup_descriptor_set(struct layout *layout)
 	vkUpdateDescriptorSets(device->logical, 1, &write_set, 0, NULL);
 }
 
-/* Setup scene layout data. */
-static void setup_layout(struct vulkan *vulkan)
-{
-	struct layout *layout = &vulkan->layout;
-
-	layout->zoom = DEFAULT_ZOOM;
-
-	setup_vertex_buffer(layout);
-	setup_index_buffer(layout);
-	submit_staging(layout);
-	setup_uniform_buffers(layout);
-	setup_descriptor_set_layout(layout);
-	setup_pipelines(layout);
-	setup_descriptor_pool(layout);
-	setup_descriptor_set(layout);
-}
 
 /* Clean up shader module data structures. */
 static void destroy_shader_modules(struct layout *layout)
@@ -1381,6 +1365,23 @@ static void destroy_layout(struct layout *layout)
 				layout->pipeline_layout, NULL);
 	vkDestroyDescriptorSetLayout(device->logical,
 				layout->descriptor_set_layout, NULL);
+}
+
+/* Setup scene layout data. */
+static void setup_layout(struct vulkan *vulkan)
+{
+	struct layout *layout = &vulkan->layout;
+
+	layout->zoom = DEFAULT_ZOOM;
+
+	setup_vertex_buffer(layout);
+	setup_index_buffer(layout);
+	submit_staging(layout);
+	setup_uniform_buffers(layout);
+	setup_descriptor_set_layout(layout);
+	setup_pipelines(layout);
+	setup_descriptor_pool(layout);
+	setup_descriptor_set(layout);
 }
 
 /* Setup our swapchain. */
