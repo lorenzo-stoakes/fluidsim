@@ -1368,6 +1368,86 @@ static void destroy_layout(struct layout *layout)
 				layout->descriptor_set_layout, NULL);
 }
 
+/* Build command buffers for every framebuffer image. */
+static void build_command_buffers(struct layout *layout)
+{
+	uint32_t i;
+	struct vulkan *vulkan = layout_vulkan(layout);
+	struct window *win = vulkan->win;
+	struct vulkan_device *device = layout_device(layout);
+	VkClearValue clear_vals[2] = {
+		{ .color = { { 0.0f, 0.0f, 0.2f, 1.0f } } },
+		{ .depthStencil = { 1.0f, 0.0f } }
+	};
+	VkRenderPassBeginInfo pass_begin_info = {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = device->render_pass,
+		.renderArea = {
+			.offset = { .x = 0, .y = 0 },
+			.extent = { .width = win->width, .height = win->height }
+		},
+		.clearValueCount = 2,
+		.pClearValues = clear_vals
+	};
+
+	for (i = 0; i < device->image_count; i++) {
+		VkCommandBufferBeginInfo begin_info = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO
+		};
+		VkViewport view_port = {
+			.height = (float)win->height,
+			.width = (float)win->width,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f
+		};
+		VkRect2D scissor = {
+			.extent = { .width = win->width, .height = win->height },
+			.offset = { .x = 0, .y = 0 }
+		};
+		VkCommandBuffer cmd_buf = device->draw_command_buffers[i];
+		VkDeviceSize offsets[1] = { 0 };
+
+		check_err("vkBeginCommandBuffer",
+			vkBeginCommandBuffer(cmd_buf, &begin_info));
+
+		pass_begin_info.framebuffer = device->frame_buffers[i];
+		vkCmdBeginRenderPass(cmd_buf, &pass_begin_info,
+				VK_SUBPASS_CONTENTS_INLINE);
+
+		/* Update dynamic viewport. */
+		vkCmdSetViewport(cmd_buf, 0, 1, &view_port);
+
+		/* Update dynamic scissor. */
+		vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+
+		/* Bind descriptor sets describing shader binding points. */
+		vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			layout->pipeline_layout, 0, 1, &layout->descriptor_set,
+			0, NULL);
+
+		/* Bind rendering pipeline. */
+		vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				layout->pipeline);
+
+		/* Bind triangle vertex buffer. */
+		vkCmdBindVertexBuffers(cmd_buf, 0, 1, &layout->vertices.buf,
+				offsets);
+
+		vkCmdDrawIndexed(cmd_buf, layout->indices.count, 1, 0, 0, 1);
+
+		vkCmdEndRenderPass(cmd_buf);
+
+		/*
+		 * Ending the render pass will add an implicit barrier
+		 * transitioning the frame buffer color attachment to
+		 * VK_IMAGE_LAYOUT_PRESENT_SRC_KHR for presenting it to the
+		 * windowing system.
+		*/
+		check_err("vkEndCommandBuffer",
+			vkEndCommandBuffer(cmd_buf));
+	}
+}
+
 /* Setup scene layout data. */
 static void setup_layout(struct vulkan *vulkan)
 {
@@ -1383,6 +1463,7 @@ static void setup_layout(struct vulkan *vulkan)
 	setup_pipelines(layout);
 	setup_descriptor_pool(layout);
 	setup_descriptor_set(layout);
+	build_command_buffers(layout);
 }
 
 /* Setup our swapchain. */
