@@ -244,8 +244,8 @@ void linear_rotate_y(struct mat4 *matrix, float rads);
 void linear_rotate_z(struct mat4 *matrix, float rads);
 
 /* vulkan.c */
-struct vulkan *vulkan_make(struct window *win);
 void vulkan_destroy(struct vulkan *vulkan);
+struct vulkan *vulkan_make(struct window *win);
 
 /* vulkan_helpers.c */
 void check_err(char *name, VkResult err);
