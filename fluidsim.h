@@ -18,6 +18,13 @@
 /* Output specified error message (suffixing newline) to stderr and exit. */
 #define fatal(...) do { err(__VA_ARGS__); exit(EXIT_FAILURE); } while (0)
 
+/* Debug print helper. */
+#ifndef NDEBUG
+#define DEBUG_PRINT(fmt, ...) err("DEBUG: " fmt, ##__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
+
 /* Determine size of static array. */
 #define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
 
