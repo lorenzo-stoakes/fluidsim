@@ -1289,6 +1289,33 @@ static void setup_descriptor_pool(struct layout *layout)
 			&layout->descriptor_pool));
 }
 
+/* Setup descriptor set. */
+static void setup_descriptor_set(struct layout *layout)
+{
+	struct vulkan_device *device = layout_device(layout);
+	VkDescriptorSetAllocateInfo info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorPool = layout->descriptor_pool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &layout->descriptor_set_layout
+	};
+	VkWriteDescriptorSet write_set = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		.pBufferInfo = &layout->uniform_data.descriptor,
+		.dstBinding = 0 /* Binds uniform buffer to binding point 0. */
+
+	};
+
+	check_err("vkAllocateDescriptorSets",
+		vkAllocateDescriptorSets(device->logical, &info,
+					&layout->descriptor_set));
+	write_set.dstSet = layout->descriptor_set,
+
+	vkUpdateDescriptorSets(device->logical, 1, &write_set, 0, NULL);
+}
+
 /* Setup scene layout data. */
 static void setup_layout(struct vulkan *vulkan)
 {
@@ -1303,6 +1330,7 @@ static void setup_layout(struct vulkan *vulkan)
 	setup_descriptor_set_layout(layout);
 	setup_pipelines(layout);
 	setup_descriptor_pool(layout);
+	setup_descriptor_set(layout);
 }
 
 /* Clean up shader module data structures. */
