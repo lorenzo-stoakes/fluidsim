@@ -49,7 +49,7 @@ unsigned char *read_file(char *path, size_t *psize)
 	if (psize)
 		*psize = size;
 
-	ret = malloc(size);
+	ret = must_malloc(size);
 	file = fopen(full_path, "r");
 
 	if (file == NULL)
