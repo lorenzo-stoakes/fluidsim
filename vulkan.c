@@ -1529,13 +1529,11 @@ void vulkan_destroy(struct vulkan *vulkan)
 
 	device = &vulkan->device;
 
-	destroy_layout(&vulkan->layout);
-
-	destroy_swapchain(device);
-
 	if (device->surface)
 		vkDestroySurfaceKHR(vulkan->instance, device->surface, NULL);
 
+	destroy_layout(&vulkan->layout);
+	destroy_swapchain(device);
 	destroy_command_buffers(device);
 	destroy_setup_command_buffer(device);
 	destroy_depth_stencil(device);
